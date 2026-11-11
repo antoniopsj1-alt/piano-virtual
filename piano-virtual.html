@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Piano Virtual</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<style>
+:root{color-scheme:dark}
+html,body{height:100%;margin:0;overflow:hidden;background:#0a0e17;overscroll-behavior:none}
+body{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);box-sizing:border-box}
+textarea,#train{-webkit-user-select:text;user-select:text}
+/* ===== Teclas ===== */
+.key{box-sizing:border-box;touch-action:none;cursor:pointer;transition:background .06s}
+.white{position:relative;flex:1 1 0;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:10px;background:linear-gradient(#f1f5f9,#cbd5e1);border:1px solid #0f172a;border-top:0;border-radius:0 0 8px 8px;color:#475569;font:600 12px system-ui}
+.black{position:absolute;top:0;height:62%;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:6px;background:linear-gradient(#3f3f46,#09090b);border:1px solid #000;border-top:0;border-radius:0 0 6px 6px;box-shadow:0 4px 6px #0008;color:#a1a1aa;font:600 10px system-ui}
+.white.on{background:linear-gradient(#67e8f9,#06b6d4)}
+.black.on{background:linear-gradient(#22d3ee,#0e7490)}
+.white.auto{background:linear-gradient(#fcd34d,#f59e0b)}
+.black.auto{background:linear-gradient(#fbbf24,#b45309)}
+.kb{opacity:.55;font-size:10px;pointer-events:none}.nm{pointer-events:none}
+.dense .white{font-size:9px;padding-bottom:6px}.dense .kb{display:none}
+.dense .nm,.black .nm{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap}
+.black .nm{font-size:9px;margin-bottom:2px}
+.dense .white .nm.c{color:#0e7490;font-weight:800}
+/* ===== Modo treino ===== */
+#train{display:flex;flex-wrap:wrap;align-items:flex-end;row-gap:.5rem;line-height:1.4}
+.brk{flex-basis:100%;height:0}
+.seg{display:inline-flex;flex-direction:column;padding:0 1px;border-radius:4px}
+.ch{font:700 .85rem ui-monospace,Menlo,monospace;color:#22d3ee;min-height:1.2em;padding-right:.35em}
+.ch.nt{color:#fbbf24}
+.ly{white-space:pre;min-height:1.4em}
+.seg.cur{background:#f59e0b2e;outline:1px solid #f59e0b}
+.seg[data-gi]{cursor:pointer}.seg[data-gi]:hover{background:#ffffff12}
+.ch .nt{color:#fbbf24}
+.sec{flex-basis:100%;margin-top:.6rem;padding-bottom:.15rem;border-bottom:1px solid #243049;font:600 .8rem system-ui;color:#94a3b8;cursor:pointer}
+.sec:hover{color:#fbbf24}
+.meta{flex-basis:100%;font-size:.72rem;color:#64748b}
+#panel{display:none}#panel.open{display:flex}
+dialog::backdrop{background:#000a}
+</style>
+</head>
+<body class="bg-[#0a0e17] text-slate-200 font-sans">
+<div class="flex h-full flex-col">
+
+  <!-- ===== CABEÇALHO / CONTROLES ===== -->
+  <header class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800 bg-[#0f1420] px-3 py-2 text-sm">
+    <h1 class="mr-1 text-base font-semibold tracking-tight text-white">Piano Virtual</h1>
+    <label class="flex items-center gap-1.5">Teclas
+      <select id="keysSel" class="rounded bg-slate-800 px-1.5 py-1">
+        <option value="13">8 (Dó–Dó)</option><option value="12">12</option><option value="24" selected>24</option><option value="36">36</option><option value="61">61</option>
+      </select></label>
+    <label class="flex items-center gap-1.5">Timbre
+      <select id="timbre" class="rounded bg-slate-800 px-1.5 py-1">
+        <option value="piano">Piano</option><option value="organo">Órgão</option><option value="synth">Synth</option>
+      </select></label>
+    <label class="flex items-center gap-1.5">Vol
+      <input id="vol" type="range" min="0" max="1" step="0.01" value="0.8" class="w-20 accent-cyan-400"></label>
+    <label class="flex items-center gap-1.5 rounded bg-slate-800 px-2 py-1">
+      <input id="chordOn" type="checkbox" class="accent-cyan-400"> Acorde de 1 botão
+      <select id="chordSel" class="rounded bg-slate-700 px-1 py-0.5">
+        <option value="maior">Maior</option><option value="menor">Menor</option><option value="7">Sétima (7)</option>
+        <option value="maj7">Maior 7M</option><option value="m7">Menor 7</option><option value="dim">Diminuto</option>
+        <option value="sus4">Sus4</option><option value="aug">Aumentado</option><option value="power">Power (5)</option>
+      </select></label>
+    <div class="ml-auto flex gap-2">
+      <button id="togglePanel" class="rounded bg-cyan-600 px-3 py-1 font-medium text-white hover:bg-cyan-500">Cifras</button>
+      <button id="helpBtn" class="rounded bg-slate-800 px-3 py-1 hover:bg-slate-700" aria-label="Tutorial">? Tutorial</button>
+    </div>
+  </header>
+
+  <main class="flex min-h-0 flex-1 flex-col lg:flex-row">
+
+    <!-- ===== PAINEL DE CIFRAS ===== -->
+    <aside id="panel" class="order-1 h-[48%] min-h-0 flex-col border-b border-slate-800 bg-[#0f1420] p-2 lg:order-2 lg:h-auto lg:w-[440px] lg:border-b-0 lg:border-l">
+      <div class="flex flex-wrap gap-1.5 text-sm">
+        <select id="songSel" class="min-w-0 flex-1 rounded bg-slate-800 px-1.5 py-1"></select>
+        <button id="newBtn" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">Nova</button>
+        <button id="saveBtn" class="rounded bg-emerald-600 px-2 py-1 text-white hover:bg-emerald-500">Salvar</button>
+        <button id="delBtn" class="rounded bg-rose-700 px-2 py-1 text-white hover:bg-rose-600">Excluir</button>
+        <button id="dlBtn" title="Baixar esta cifra (.txt)" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">⬇ Baixar</button>
+        <button id="dlAllBtn" title="Baixar todas as músicas (.json)" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">⬇ Todas</button>
+        <button id="openBtn" title="Abrir arquivo de cifra (.txt ou .json)" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">📂 Abrir</button>
+        <button id="lyricBtn" title="Colar uma letra e distribuir acordes nela" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">📝 Colar letra</button>
+        <button id="fixBtn" title="Reorganizar os acordes da cifra aberta" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">🛠 Ajustar cifra</button>
+        <input id="fileIn" type="file" accept=".txt,.cifra,.json,text/plain,application/json" multiple class="hidden">
+      </div>
+      <input id="title" placeholder="Título da música" class="mt-1.5 rounded bg-slate-800 px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-cyan-500">
+      <div class="mt-1.5 flex gap-1 text-sm">
+        <button id="tabEdit" class="rounded-t bg-slate-700 px-3 py-1">Editor</button>
+        <button id="tabTrain" class="rounded-t bg-slate-800 px-3 py-1">Treino</button>
+      </div>
+      <textarea id="txt" spellcheck="false" class="min-h-0 flex-1 resize-none rounded-b rounded-tr bg-[#0a0e17] p-2 font-mono text-sm outline-none focus:ring-1 focus:ring-cyan-500" placeholder="Digite letra, [acordes] e &lt;notas&gt;..."></textarea>
+      <div id="train" class="hidden min-h-0 flex-1 overflow-auto rounded-b rounded-tr bg-[#0a0e17] p-3 text-lg"></div>
+
+      <!-- Autoplay -->
+      <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+        <button id="playBtn" class="rounded bg-amber-500 px-4 py-1.5 font-semibold text-black hover:bg-amber-400">▶ Tocar</button>
+        <button id="pauseBtn" class="hidden rounded bg-sky-600 px-3 py-1.5 font-semibold text-white hover:bg-sky-500">⏸ Pausar</button>
+        <button id="prevSec" title="Início da seção / seção anterior" class="rounded bg-slate-800 px-2.5 py-1.5 hover:bg-slate-700">⏮</button>
+        <button id="nextSec" title="Próxima seção" class="rounded bg-slate-800 px-2.5 py-1.5 hover:bg-slate-700">⏭</button>
+        <select id="secSel" title="Trecho a tocar" class="min-w-0 max-w-[10rem] rounded bg-slate-800 px-1.5 py-1.5"><option value="all">Trecho: tudo</option></select>
+        <label class="flex items-center gap-1.5">BPM <input id="bpm" type="range" min="40" max="220" value="100" class="w-24 accent-amber-400"><b id="bpmV" class="w-8">100</b></label>
+        <label class="flex items-center gap-1"><input id="loop" type="checkbox" class="accent-amber-400"> Repetir</label>
+        <span id="selInfo" class="text-xs text-slate-400"></span>
+      </div>
+    </aside>
+
+    <!-- ===== PIANO ===== -->
+    <section class="order-2 min-h-0 min-w-0 flex-1 p-2 lg:order-1">
+      <div id="piano" class="relative flex h-full w-full overflow-hidden rounded-b-xl bg-black shadow-2xl shadow-black"></div>
+    </section>
+  </main>
+
+  <footer class="shrink-0" style="text-align: center; color: white; font-size: 18px;"> <!-- Início do Rodapé da página -->
+    <p style="text-align: center;">
+      <a href="https://antoniopsj1-alt.github.io/Portfolio-AntonioJunior/" target="_blank" rel="noopener" style="text-decoration: none; color: inherit;">
+        © 2026 Antônio Pereira de Souza Junior.
+      </a>
+    </p>
+    <p style="text-align: center;">Todos os direitos reservados.</p>
+    <address style="text-align: center; color: blue; font-weight: bold;">
+      Contato: <a href="mailto:antoniopsj1@gmail.com">antoniopsj1@gmail.com</a>
+    </address>
+  </footer> <!-- Fim do Rodapé -->
+</div>
+
+<div id="toast" class="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2 rounded bg-slate-800 px-4 py-2 text-sm opacity-0 shadow-lg transition-opacity"></div>
+
+<!-- ===== AJUSTAR CIFRA ===== -->
+<dialog id="fixDlg" class="w-[min(520px,94vw)] rounded-xl bg-[#121826] p-4 text-sm text-slate-200">
+  <h2 class="mb-2 text-base font-semibold text-white">Ajustar posição e tempo dos acordes</h2>
+  <p class="mb-2 text-xs text-slate-400">Refaz os acordes do texto que está no Editor: limpa caracteres invisíveis, junta linhas de uma palavra à linha anterior e distribui os acordes em pares de linhas. Linha 1 recebe o 1º acorde; linha 2 recebe os demais, o primeiro no começo e o último perto do fim.</p>
+  <div class="flex flex-wrap items-center gap-3">
+    <label class="flex items-center gap-1.5">Acordes <input id="fixChords" value="Am Dm G" class="w-28 rounded bg-slate-800 px-2 py-1"></label>
+    <label class="flex items-center gap-1.5">Tempos do 1º <input id="fixB1" type="number" min="0.5" step="0.5" value="4" class="w-14 rounded bg-slate-800 px-2 py-1"></label>
+    <label class="flex items-center gap-1.5">Tempos dos demais <input id="fixB2" type="number" min="0.5" step="0.5" value="2" class="w-14 rounded bg-slate-800 px-2 py-1"></label>
+  </div>
+  <label class="mt-2 flex items-center gap-1.5"><input id="fixMerge" type="checkbox" checked class="accent-cyan-400"> Juntar linhas de uma palavra à linha anterior</label>
+  <div class="mt-3 flex justify-end gap-2">
+    <button id="fixCancel" class="rounded bg-slate-800 px-3 py-1.5 hover:bg-slate-700">Cancelar</button>
+    <button id="fixGo" class="rounded bg-cyan-600 px-3 py-1.5 font-medium text-white hover:bg-cyan-500">Aplicar</button>
+  </div>
+</dialog>
+
+<!-- ===== COLAR LETRA ===== -->
+<dialog id="lyricDlg" class="w-[min(560px,94vw)] rounded-xl bg-[#121826] p-4 text-sm text-slate-200">
+  <h2 class="mb-2 text-base font-semibold text-white">Colar letra e distribuir acordes</h2>
+  <textarea id="lyricIn" rows="9" spellcheck="false" placeholder="Cole aqui a letra (uma linha por verso). Linhas como [Refrão] viram seções." class="w-full rounded bg-[#0a0e17] p-2 font-mono text-sm outline-none focus:ring-1 focus:ring-cyan-500" style="user-select:text"></textarea>
+  <div class="mt-2 flex flex-wrap items-center gap-3">
+    <label class="flex items-center gap-1.5">Acordes <input id="lyricChords" value="Am Dm G" class="w-32 rounded bg-slate-800 px-2 py-1"></label>
+    <label class="flex items-center gap-1.5">Tempos por acorde <input id="lyricBeats" type="number" min="0.5" step="0.5" value="2" class="w-16 rounded bg-slate-800 px-2 py-1"></label>
+    <label class="flex items-center gap-1.5">Acordes por linha <input id="lyricPer" type="number" min="1" max="8" value="3" class="w-14 rounded bg-slate-800 px-2 py-1"></label>
+  </div>
+  <label class="mt-2 flex items-center gap-1.5"><input id="lyricAppend" type="checkbox" class="accent-cyan-400"> Adicionar ao final do texto atual (senão substitui)</label>
+  <p class="mt-2 text-xs text-slate-400">Os acordes são espalhados pelas palavras de cada linha, repetindo a sequência informada. Depois ajuste no Editor onde cada troca realmente cai e clique em Salvar.</p>
+  <div class="mt-3 flex justify-end gap-2">
+    <button id="lyricCancel" class="rounded bg-slate-800 px-3 py-1.5 hover:bg-slate-700">Cancelar</button>
+    <button id="lyricGo" class="rounded bg-cyan-600 px-3 py-1.5 font-medium text-white hover:bg-cyan-500">Aplicar</button>
+  </div>
+</dialog>
+
+<!-- ===== TUTORIAL ===== -->
+<dialog id="help" class="max-h-[85vh] w-[min(640px,92vw)] overflow-auto rounded-xl bg-[#121826] p-5 text-sm leading-relaxed text-slate-200">
+  <h2 class="mb-3 text-lg font-semibold text-white">Como usar</h2>
+  <h3 class="mt-3 font-semibold text-cyan-300">Tocar</h3>
+  <p>Clique ou toque nas teclas. Vários dedos ao mesmo tempo formam acordes. No PC, use o teclado: fileira <code>Z S X D C V G B H N J M</code> (primeira oitava) e <code>Q 2 W 3 E R 5 T 6 Y 7 U I 9 O 0 P</code> (oitavas seguintes). Use as setas <code>←</code> e <code>→</code> para mover o teclado do PC uma oitava. No celular, gire para o modo paisagem se usar muitas teclas.</p>
+  <h3 class="mt-3 font-semibold text-cyan-300">Quantidade de teclas e timbre</h3>
+  <p>Escolha 8 (Dó a Dó), 12, 24, 36 ou 61 teclas. O piano ocupa toda a área disponível e mantém a proporção entre teclas brancas e pretas. Troque o timbre entre piano, órgão e synth.</p>
+  <h3 class="mt-3 font-semibold text-cyan-300">Acorde de um botão</h3>
+  <p>Marque “Acorde de 1 botão”, escolha o tipo (maior, menor, sétima etc.) e toque em qualquer tecla: ela vira a nota base do acorde.</p>
+  <h3 class="mt-3 font-semibold text-cyan-300">Cifras e letras</h3>
+  <p>Abra o painel <b>Cifras</b>. No <b>Editor</b>, escreva a letra e marque o que deve soar:</p>
+  <ul class="my-2 list-disc pl-5">
+    <li><code>[C]</code> <code>[Am7]</code> <code>[F#m]</code> <code>[G/B]</code> → acorde (aceita m, 7, maj7, m7, dim, sus4, aug, 5 e baixo com “/”).</li>
+    <li><code>&lt;E4&gt;</code> <code>&lt;C#5&gt;</code> → nota melódica (nome + oitava; Dó central = C4).</li>
+    <li><code>&lt;R&gt;</code> → pausa.</li>
+    <li>Duração em tempos depois de “:”, por exemplo <code>[C:4]</code> ou <code>&lt;G4:0.5&gt;</code>. Sem número, vale 1 tempo.</li>
+    <li>Marcas <b>coladas</b>, sem nada entre elas, soam juntas: <code>[C]&lt;E4:2&gt;</code> toca acorde e nota ao mesmo tempo. Para tocar <b>em sequência</b>, separe com espaço ou texto: <code>[Am] [G]</code>.</li>
+    <li><code>## Refrão</code> cria uma <b>seção</b> (linha começando com <code>##</code>).</li>
+    <li><code>@bpm 120</code> define o andamento ao abrir a música; <code>@info texto</code> mostra uma observação em cinza no Treino.</li>
+  </ul>
+  <p>Use <b>Nova</b>, <b>Salvar</b> e <b>Excluir</b> para gerenciar suas músicas. Elas ficam salvas no navegador (LocalStorage). <b>⬇ Baixar</b> gera um arquivo <code>.txt</code> da cifra, <b>⬇ Todas</b> gera um backup <code>.json</code> e <b>📂 Abrir</b> carrega arquivos <code>.txt</code> ou <code>.json</code> (pode escolher vários). <b>🛠 Ajustar cifra</b> refaz a posição e a duração dos acordes do texto aberto (pares de linhas: 1º acorde na linha 1, os demais na linha 2). <b>📝 Colar letra</b> recebe uma letra e distribui uma sequência de acordes (ex.: Am Dm G) pelas palavras de cada linha; depois é só ajustar no Editor. A aba <b>Treino</b> mostra cifras e notas sobre a letra, para você ler enquanto toca.</p>
+  <h3 class="mt-3 font-semibold text-cyan-300">Piano automático e trechos</h3>
+  <p>Clique em <b>▶ Tocar</b>: o piano toca o texto e acende as teclas em âmbar. Você escolhe o trecho de três formas:</p>
+  <ul class="my-2 list-disc pl-5">
+    <li><b>Seção:</b> use o seletor “Trecho” ao lado do play para tocar só uma seção (Intro, Refrão etc.).</li>
+    <li><b>Seleção:</b> selecione qualquer pedaço no Editor; ele tem prioridade sobre o seletor.</li>
+    <li><b>Voltar ou pular sem recomeçar:</b> na aba Treino, <b>clique em qualquer acorde, nota ou título de seção</b> e a música continua dali. Os botões ⏮ e ⏭ voltam ao início da seção ou avançam para a próxima.</li>
+  </ul>
+  <p>Durante a reprodução aparece o botão <b>⏸ Pausar</b>, que vira <b>▶ Continuar</b> e retoma do ponto onde parou. <b>■ Parar</b> encerra. Ajuste a velocidade em BPM e marque “Repetir” para repetir o trecho.</p>
+  <h3 class="mt-3 font-semibold text-cyan-300">Aviso sobre as músicas de exemplo</h3>
+  <p>As cifras da KATSEYE trazem apenas a progressão de acordes e a estrutura, sem letra. Os temas de Mario e Piratas do Caribe são versões simplificadas, feitas de ouvido, da melodia principal. Edite à vontade.</p>
+</dialog>
+
+<script>
+"use strict";
+/* ============ Utilitários musicais ============ */
+const NAMES=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const PC={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
+const isBlack=m=>[1,3,6,8,10].includes(m%12);
+const midiName=m=>NAMES[m%12]+(Math.floor(m/12)-1);
+const freq=m=>440*2**((m-69)/12);
+const CH={maior:[0,4,7],menor:[0,3,7],'7':[0,4,7,10],maj7:[0,4,7,11],m7:[0,3,7,10],dim:[0,3,6],sus4:[0,5,7],aug:[0,4,8],power:[0,7,12]};
+const START={13:60,12:60,24:48,36:48,61:36}; // MIDI da primeira tecla (60 = C4)
+const KM='zsxdcvgbhnjm'+'q2w3er5t6y7ui9o0p'; // teclado do PC: posição = deslocamento em semitons
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(t){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,1800)}
+
+/* ============ Motor de áudio (Web Audio API) ============ */
+let ctx,master;
+function initAudio(){
+  if(ctx){if(ctx.state==='suspended')ctx.resume();return}
+  ctx=new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});
+  const comp=ctx.createDynamicsCompressor();
+  master=ctx.createGain();master.gain.value=+$('vol').value;
+  master.connect(comp);comp.connect(ctx.destination);
+}
+// Cria uma voz: osciladores somados (harmônicos) + envelope ADSR
+function voice(m){
+  const t=ctx.currentTime,f=freq(m),T=$('timbre').value,g=ctx.createGain();
+  g.connect(master);
+  const parts=T==='organo'?[['sine',1,.5],['sine',2,.28],['sine',4,.14],['sine',.5,.2]]
+    :T==='synth'?[['sawtooth',1,.18],['square',1.006,.12]]
+    :[['triangle',1,.6],['sine',2,.28],['sine',3,.1],['sine',4,.05]];
+  const oscs=parts.map(([ty,mul,a])=>{
+    const o=ctx.createOscillator(),og=ctx.createGain();
+    o.type=ty;o.frequency.value=f*mul;og.gain.value=a;
+    o.connect(og);og.connect(g);o.start(t);return o});
+  const peak=.2,piano=T==='piano';
+  g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(peak,t+.008);                       // ataque
+  g.gain.setTargetAtTime(piano?peak*.18:peak*.8,t+.01,piano?.9:.06); // decaimento/sustentação
+  return{release(){
+    const n=ctx.currentTime,r=piano?.12:.07;
+    g.gain.cancelScheduledValues(n);g.gain.setValueAtTime(g.gain.value,n);
+    g.gain.setTargetAtTime(0,n,r);                                    // release
+    oscs.forEach(o=>o.stop(n+r*8));
+  }};
+}
+
+/* ============ Teclado visual ============ */
+const piano=$('piano'),keyEls=new Map(),lit=new Map(),held=new Map();
+let startMidi=48,shift=0;
+function build(){
+  stopAll();piano.innerHTML='';keyEls.clear();lit.clear();shift=0;
+  const n=+$('keysSel').value;startMidi=START[n];
+  const ms=[...Array(n)].map((_,i)=>startMidi+i);
+  const nW=ms.filter(m=>!isBlack(m)).length,w=100/nW;let wi=0;
+  piano.classList.toggle('dense',nW>20);
+  ms.forEach(m=>{
+    const el=document.createElement('div');el.dataset.m=m;
+    if(isBlack(m)){
+      el.className='key black';el.style.width=w*.6+'%';el.style.left=(wi*w-w*.3)+'%';
+      el.innerHTML=`<span class="nm">${midiName(m)}</span><span class="kb"></span>`;
+    }else{
+      wi++;el.className='key white';
+      el.innerHTML=`<span class="nm${m%12===0?' c':''}">${midiName(m)}</span><span class="kb"></span>`;
+    }
+    piano.appendChild(el);keyEls.set(m,el);
+  });
+  labelKeys();
+}
+function labelKeys(){
+  keyEls.forEach((el,m)=>{const i=m-startMidi-shift;el.querySelector('.kb').textContent=i>=0&&i<KM.length?KM[i].toUpperCase():''});
+}
+function light(m,cls,d){
+  const el=keyEls.get(m);if(!el)return;
+  const k=cls+m,c=(lit.get(k)||0)+d;lit.set(k,c);el.classList.toggle(cls,c>0);
+}
+
+/* ============ Notas e acordes (polifonia) ============ */
+function start(id,midis,cls='on'){
+  initAudio();stop(id);
+  held.set(id,midis.map(m=>{light(m,cls,1);return{m,cls,v:voice(m)}}));
+}
+function stop(id){
+  const a=held.get(id);if(!a)return;
+  a.forEach(x=>{x.v.release();light(x.m,x.cls,-1)});held.delete(id);
+}
+function stopAll(){[...held.keys()].forEach(stop)}
+function notesFor(m){return $('chordOn').checked?CH[$('chordSel').value].map(i=>m+i):[m]}
+const keyAt=el=>{const k=el&&el.closest&&el.closest('[data-m]');return k?+k.dataset.m:null};
+
+/* ---- Mouse ---- */
+piano.addEventListener('mousedown',e=>{const m=keyAt(e.target);if(m!=null){e.preventDefault();start('mouse',notesFor(m))}});
+piano.addEventListener('mouseover',e=>{if(e.buttons===1){const m=keyAt(e.target);if(m!=null)start('mouse',notesFor(m))}});
+window.addEventListener('mouseup',()=>stop('mouse'));
+/* ---- Touch (multitoque, resposta imediata) ---- */
+const touches=new Map();
+piano.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  for(const t of e.changedTouches){const m=keyAt(t.target);if(m!=null){touches.set(t.identifier,m);start('t'+t.identifier,notesFor(m))}}
+},{passive:false});
+piano.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  for(const t of e.changedTouches){
+    const m=keyAt(document.elementFromPoint(t.clientX,t.clientY));
+    if(m!=null&&m!==touches.get(t.identifier)){touches.set(t.identifier,m);start('t'+t.identifier,notesFor(m))}
+  }
+},{passive:false});
+const endTouch=e=>{for(const t of e.changedTouches){stop('t'+t.identifier);touches.delete(t.identifier)}};
+piano.addEventListener('touchend',endTouch);piano.addEventListener('touchcancel',endTouch);
+/* ---- Teclado do PC ---- */
+const typing=e=>/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+addEventListener('keydown',e=>{
+  if(typing(e)||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight'){
+    const n=shift+(e.key==='ArrowRight'?12:-12);
+    if(startMidi+n>=0&&n<keyEls.size){shift=n;labelKeys();toast('Teclado do PC deslocado uma oitava')}
+    return;
+  }
+  if(e.repeat)return;
+  const i=KM.indexOf(e.key.toLowerCase());if(i<0)return;
+  const m=startMidi+shift+i;if(keyEls.has(m))start('k'+e.key.toLowerCase(),notesFor(m));
+});
+addEventListener('keyup',e=>stop('k'+e.key.toLowerCase()));
+addEventListener('blur',stopAll);
+
+/* ============ Gerenciador de músicas (CRUD + LocalStorage) ============ */
+const DEMO=[
+{id:'demo1',title:'Parabéns pra Você (exemplo)',text:
+`@bpm 100
+[C]<G4:.75>Pa<G4:.25>ra<A4>béns <G4>pra <C5>vo<B4:2>cê
+
+[G]<G4:.75>Nes<G4:.25>ta <A4>da<G4>ta <D5>que<C5:2>ri<R>da
+
+[C]<G4:.75>Muitas <G4:.25>fe<G5>li<E5>ci<C5>da<B4>des<A4:2>
+[F]<F5:.75>Mui<F5:.25>tos <E5>a<C5>nos <D5>de <C5:3>vi<R>da`},
+{id:'kat-gabriela',title:'KATSEYE – Gabriela (progressão)',text:
+`@bpm 146
+@info Tom: Lá menor · loop Am – Dm – G · só acordes, sem letra
+## Intro
+[Am:4] [Dm:2] [G:2]
+## Verso
+[Am:4] [Am:4] [Dm:2] [G:2] [Am:4]
+[Am:4] [Dm:2] [G:2] [Am:4]
+## Refrão
+[Am:4] [Dm:2] [G:2] [Am:4] [Dm:2] [G:2]
+[Am:4] [Dm:2] [G:2] [Am:4]
+## Final
+[Dm:2] [G:2] [Dm:2] [G:2] [Am:4]`},
+{id:'kat-pretty',title:"KATSEYE – I'm Pretty (progressão)",text:
+`@bpm 126
+@info Tom: Mi bemol maior · loop Eb – Bbm – Db – Ab · só acordes, sem letra
+## Verso
+[Eb:4] [Bbm:4] [Db:4] [Ab:4]
+[Eb:4] [Bbm:4] [Db:4] [Ab:4]
+## Pré-refrão
+[Eb:4] [Bbm:4] [Db:4] [Ab:4]
+[Eb:4] [Bbm:4] [Db:4] [Ab:4]
+## Refrão
+[Eb:4] [Bbm:4] [Db:4] [Ab:4]
+[Eb:4] [Bbm:4] [Db:4] [Ab:4]
+## Pós-refrão
+[Bbm:4] [Db:4] [Ab:4] [Eb:4]`},
+{id:'kat-that-way',title:'KATSEYE – That Way (progressão)',text:
+`@bpm 120
+@info Tom: Ré menor · acordes Dm e Gm7 · só acordes, sem letra
+## Verso
+[Dm:8] [Dm:4] [Gm7:4]
+[Dm:8] [Gm7:4] [Dm:4]
+## Refrão
+[Dm:4] [Dm:4] [Gm7:4] [Dm:4]
+[Dm:4] [Gm7:4] [Dm:4] [Dm:4]
+## Final
+[Gm7:4] [Dm:4]`},
+{id:'kat-hootie',title:'KATSEYE – Hootie Frutti (progressão)',text:
+`@bpm 132
+@info Aproximação em Si menor (base Bm, com G, Em e D). Ajuste de ouvido · só acordes, sem letra
+## Refrão
+[Bm:4] [Bm:4] [Bm:4] [Bm:4]
+## Verso
+[Bm:4] [Bm:4] [G:4] [Em:4]
+## Final
+[Em:4] [F:4] [D:4] [Bm:4]`},
+{id:'mario',title:'Tema Super Mario Bros (simplificado)',text:
+`@bpm 190
+@info Versão simplificada da melodia principal, feita de ouvido
+## Tema
+<E5:.5> <E5:.5> <R:.5> <E5:.5> <R:.5> <C5:.5> <E5:1>
+<G5:2> <G4:2>
+<C5:1.5> <G4:1.5> <E4:1>
+<R:.5> <A4:.5> <R:.5> <B4:.5> <R:.5> <Bb4:.5> <A4:1>
+<G4:.33> <E5:.33> <G5:.34> <A5:1> <F5:.5> <G5:.5> <R:.5> <E5:.5>
+<C5:.5> <D5:.5> <B4:1.5> <R:1.5>`},
+{id:'pirates',title:'Tema Piratas do Caribe (simplificado)',text:
+`@bpm 150
+@info Versão simplificada da melodia principal em Ré menor, feita de ouvido
+## Tema
+[Dm]<D4:.5> <E4:.5> <F4:1> <F4:.5> <G4:.5> <A4:1>
+[Dm]<A4:.5> <C5:.5> <D5:1> <D5:.5> <E5:.5> <F5:1>
+[Gm]<F5:.5> <G5:.5> <E5:1> <E5:.5> <D5:.5> <C5:.5> <D5:.5>
+[A]<D5:2> <R:1>`}
+];
+let songs=(()=>{try{return JSON.parse(localStorage.getItem('pv_songs'))||[]}catch{return[]}})();
+let seeded=(()=>{try{return JSON.parse(localStorage.getItem('pv_seeded'))||[]}catch{return[]}})();
+songs=songs.filter(s=>s.id!=='demo2');
+DEMO.forEach(d=>{if(!seeded.includes(d.id)){if(!songs.some(s=>s.id===d.id))songs.push(d);seeded.push(d.id)}});
+try{localStorage.setItem('pv_seeded',JSON.stringify(seeded));localStorage.setItem('pv_songs',JSON.stringify(songs))}catch{}
+let curId=null;
+function persist(){try{localStorage.setItem('pv_songs',JSON.stringify(songs))}catch{toast('Não foi possível salvar no navegador')}}
+function fillSongs(){
+  $('songSel').innerHTML='<option value="">— Nova música —</option>'+songs.map(s=>`<option value="${s.id}">${esc(s.title||'Sem título')}</option>`).join('');
+  $('songSel').value=curId||'';
+}
+function loadSong(id){
+  const s=songs.find(x=>x.id===id);curId=s?s.id:null;
+  $('title').value=s?s.title:'';$('txt').value=s?s.text:'';
+  $('songSel').value=curId||'';stopPlay();curGi=-1;applyBpm();renderTrain();selInfo();
+}
+$('songSel').onchange=e=>loadSong(e.target.value);
+$('newBtn').onclick=()=>{loadSong('');$('title').focus()};
+$('saveBtn').onclick=()=>{
+  const title=$('title').value.trim()||'Sem título',text=$('txt').value;
+  if(curId){const s=songs.find(x=>x.id===curId);s.title=title;s.text=text}
+  else{curId='s'+Date.now();songs.push({id:curId,title,text})}
+  persist();fillSongs();toast('Música salva');
+};
+$('delBtn').onclick=()=>{
+  if(!curId)return toast('Selecione uma música para excluir');
+  if(!confirm('Excluir esta música?'))return;
+  songs=songs.filter(s=>s.id!==curId);persist();curId=null;fillSongs();loadSong('');toast('Música excluída');
+};
+
+/* ============ Interpretador de cifras ============ */
+function ivs(s){
+  if(/^(maj7|M7|7M)/.test(s))return CH.maj7;
+  if(/^(m|min|-)7/.test(s))return CH.m7;
+  if(/^(m|min|-)(?!aj)/.test(s))return CH.menor;
+  if(/^(dim|°)/.test(s))return CH.dim;
+  if(/^sus/.test(s))return CH.sus4;
+  if(/^(aug|\+)/.test(s))return CH.aug;
+  if(/^7/.test(s))return CH['7'];
+  if(s==='5')return CH.power;
+  return CH.maior;
+}
+const accPc=(l,a)=>(PC[l]+(a==='#'?1:a==='b'?-1:0)+12)%12;
+function parseTok(raw,chord){
+  const [name,d]=raw.trim().split(':'),beats=d!==undefined&&!isNaN(parseFloat(d))?parseFloat(d):null;
+  if(!chord&&/^r$/i.test(name))return{label:'—',midis:[],beats};
+  if(chord){
+    const r=name.match(/^([A-G])([#b]?)(.*?)(?:\/([A-G])([#b]?))?$/);if(!r)return null;
+    const root=accPc(r[1],r[2]),bass=r[4]?accPc(r[4],r[5]):root;
+    return{label:name,beats,midis:[36+bass,...ivs(r[3]).map(i=>48+root+i)]};
+  }
+  const r=name.match(/^([A-G])([#b]?)(-?\d)$/);if(!r)return null;
+  return{label:name,beats,midis:[(+r[3]+1)*12+accPc(r[1],r[2])]};
+}
+// Agrupa marcas coladas (sem texto entre elas) para soarem juntas
+function parse(text){
+  const re=/\[([^\]\n]+)\]|<([^>\n]+)>/g,gs=[];let m;
+  while((m=re.exec(text))){
+    const tk=parseTok(m[1]??m[2],m[1]!==undefined);if(!tk)continue;
+    const last=gs[gs.length-1],isCh=m[1]!==undefined;
+    if(last&&last.end===m.index){
+      last.end=m.index+m[0].length;last.labels.push({t:tk.label,ch:isCh});last.midis.push(...tk.midis);
+      if(tk.beats!=null)last.b.push(tk.beats);
+    }else gs.push({start:m.index,end:m.index+m[0].length,labels:[{t:tk.label,ch:isCh}],midis:[...tk.midis],b:tk.beats!=null?[tk.beats]:[]});
+  }
+  gs.forEach((g,i)=>{g.i=i;g.beats=g.b.length?Math.max(...g.b):1});
+  return gs;
+}
+
+/* ============ Modo treino (visualização dinâmica) ============ */
+function renderTrain(){
+  const text=$('txt').value,gs=parse(text);let h='',pos=0,lab='',gi=-1,buf='',bs=0,si=0;
+  const flush=()=>{
+    buf.split('\n').forEach((p,k)=>{
+      if(k>0)h+='<div class="brk"></div>';
+      const first=k===0,ls=!first||bs===0||text[bs-1]==='\n';
+      if(ls&&/^#{1,6}[ \t]*\S/.test(p)){h+=`<div class="sec" data-sec="${si++}">${esc(p.replace(/^#+[ \t]*/,''))}</div>`;return}
+      if(ls&&p[0]==='@'){h+=`<div class="meta">${esc(p.replace(/^@info[ \t]*/,''))}</div>`;return}
+      const hasG=first&&gi>=0;
+      h+=`<span class="seg"${hasG?` data-gi="${gi}"`:''}><span class="ch">${first?lab:''}</span><span class="ly">${esc(p)||' '}</span></span>`;
+    });
+    buf='';
+  };
+  gs.forEach(g=>{
+    bs=pos;buf=text.slice(pos,g.start);flush();
+    lab=g.labels.map(l=>`<span class="${l.ch?'':'nt'}">${esc(l.t)}</span>`).join(' ');gi=g.i;pos=g.end;
+  });
+  bs=pos;buf=text.slice(pos);flush();
+  $('train').innerHTML=h;
+  secs=sections(text,gs);setSecs();
+}
+function tab(train){
+  $('txt').classList.toggle('hidden',train);$('train').classList.toggle('hidden',!train);
+  $('tabEdit').className='rounded-t px-3 py-1 '+(train?'bg-slate-800':'bg-slate-700');
+  $('tabTrain').className='rounded-t px-3 py-1 '+(train?'bg-slate-700':'bg-slate-800');
+  if(train)renderTrain();
+}
+$('tabEdit').onclick=()=>tab(false);$('tabTrain').onclick=()=>tab(true);
+$('txt').addEventListener('input',renderTrain);
+
+/* ============ Piano autômato ============ */
+let playing=false,paused=false,timers=[],list=[],pos=0,curGi=-1,secs=[];
+// Seções = linhas que começam com #; firstGi = primeiro acorde/nota da seção
+function sections(text,all){
+  const re=/^#{1,6}[ \t]*(\S.*)$/gm,out=[];let m;
+  while((m=re.exec(text))){const f=all.find(g=>g.start>=m.index);out.push({name:m[1].trim(),start:m.index,firstGi:f?f.i:-1})}
+  return out;
+}
+function setSecs(){
+  const sel=$('secSel'),prev=sel.value;
+  sel.innerHTML='<option value="all">Trecho: tudo</option>'+secs.map((s,i)=>`<option value="${i}">${esc(s.name)}</option>`).join('');
+  sel.value=secs[prev]?prev:'all';
+}
+function selRange(){const t=$('txt');return t.selectionStart!==t.selectionEnd?[t.selectionStart,t.selectionEnd]:null}
+function selInfo(){const r=selRange();$('selInfo').textContent=r?`Seleção: ${r[1]-r[0]} car.`:''}
+['select','keyup','mouseup','touchend','input','focus'].forEach(ev=>$('txt').addEventListener(ev,()=>setTimeout(selInfo,0)));
+$('bpm').oninput=e=>$('bpmV').textContent=e.target.value;
+$('vol').oninput=e=>{if(master)master.gain.value=+e.target.value};
+function applyBpm(){const m=$('txt').value.match(/^@bpm[ \t]+(\d{2,3})/m);if(m){$('bpm').value=m[1];$('bpmV').textContent=$('bpm').value}}
+function mark(i){
+  $('train').querySelectorAll('.cur').forEach(e=>e.classList.remove('cur'));
+  const el=$('train').querySelector(`[data-gi="${i}"]`);
+  if(el){el.classList.add('cur');el.scrollIntoView({block:'center',behavior:'smooth'})}
+}
+function setPaused(v){paused=v;$('pauseBtn').textContent=v?'▶ Continuar':'⏸ Pausar'}
+// Pausa: silencia e guarda a posição; ao continuar, retoma do acorde/nota atual
+function pausePlay(){
+  if(!playing)return;
+  if(!paused){setPaused(true);clearTimers();pos=Math.max(pos-1,0)}
+  else{setPaused(false);step()}
+}
+function clearTimers(){timers.forEach(clearTimeout);timers=[];stop('auto')}
+function stopPlay(){
+  playing=false;setPaused(false);$('pauseBtn').classList.add('hidden');clearTimers();
+  $('train').querySelectorAll('.cur').forEach(e=>e.classList.remove('cur'));
+  $('playBtn').textContent='▶ Tocar';
+}
+// Prioridade: seleção no editor > seção escolhida > tudo
+function getList(all){
+  const r=selRange();if(r)return all.filter(g=>g.start>=r[0]&&g.end<=r[1]);
+  const v=$('secSel').value;
+  if(v!=='all'&&secs[v]){const s=secs[v],nx=secs[+v+1];return all.filter(g=>g.start>=s.start&&(!nx||g.start<nx.start))}
+  return all;
+}
+function step(){
+  if(!playing||paused)return;
+  if(pos>=list.length){if($('loop').checked&&list.length)pos=0;else return stopPlay()}
+  const g=list[pos++],ms=g.beats*60000/$('bpm').value;
+  curGi=g.i;mark(g.i);start('auto',g.midis,'auto');
+  timers=[setTimeout(()=>stop('auto'),ms*.9),setTimeout(step,ms)];
+}
+function startPlay(from){
+  initAudio();const all=parse($('txt').value);list=getList(all);
+  if(!list.length)return toast('Nenhuma nota ou acorde no trecho. Veja o Tutorial.');
+  tab(true);playing=true;setPaused(false);$('pauseBtn').classList.remove('hidden');$('playBtn').textContent='■ Parar';pos=0;
+  if(from!=null){let k=list.findIndex(g=>g.i===from);if(k<0){list=all;k=from}pos=k}
+  step();
+}
+// Pula para qualquer ponto sem recomeçar do zero
+function jump(gi){
+  if(!playing)return startPlay(gi);
+  setPaused(false);clearTimers();const all=parse($('txt').value);
+  let k=list.findIndex(g=>g.i===gi);if(k<0){list=all;k=gi}
+  pos=k;step();
+}
+function secJump(dir){
+  const t=$('txt').value,all=parse(t),ss=sections(t,all).filter(s=>s.firstGi>=0);
+  if(!ss.length)return toast('Crie seções com linhas que começam com ##');
+  const cur=Math.max(curGi,0);let si=-1;ss.forEach((s,i)=>{if(s.firstGi<=cur)si=i});
+  const tg=dir>0?ss[si+1]:(si>=0&&cur>ss[si].firstGi?ss[si]:ss[Math.max(si-1,0)]);
+  tg?jump(tg.firstGi):toast('Última seção');
+}
+$('train').addEventListener('click',e=>{
+  const s=e.target.closest('[data-sec]');
+  if(s){const f=secs[+s.dataset.sec];if(f&&f.firstGi>=0)jump(f.firstGi);return}
+  const g=e.target.closest('[data-gi]');if(g)jump(+g.dataset.gi);
+});
+$('prevSec').onclick=()=>secJump(-1);$('nextSec').onclick=()=>secJump(1);
+$('secSel').onchange=()=>{if(playing){stopPlay();startPlay()}};
+$('pauseBtn').onclick=pausePlay;
+$('playBtn').onclick=()=>playing?stopPlay():startPlay();
+
+/* ============ Baixar e abrir arquivos de cifra ============ */
+function dl(name,content,type){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+const slug=s=>(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\w]+/g,'-').replace(/^-|-$/g,'').toLowerCase()||'cifra';
+function addSong(title,text){
+  const id='s'+Date.now()+Math.random().toString(36).slice(2,6);
+  songs.push({id,title:title||'Sem título',text:text.replace(/\r\n/g,'\n')});return id;
+}
+$('dlBtn').onclick=()=>{
+  const title=$('title').value.trim()||'Sem título';
+  dl(slug(title)+'.cifra.txt',`@titulo ${title}\n${$('txt').value}`,'text/plain;charset=utf-8');
+};
+$('dlAllBtn').onclick=()=>dl('piano-virtual-cifras.json',JSON.stringify(songs,null,1),'application/json');
+$('openBtn').onclick=()=>$('fileIn').click();
+$('fileIn').onchange=async e=>{
+  let n=0,last;
+  for(const f of e.target.files){
+    try{
+      const raw=await f.text();
+      if(/\.json$/i.test(f.name)){
+        const d=JSON.parse(raw);
+        (Array.isArray(d)?d:d.songs||[]).forEach(x=>{if(x&&typeof x.text==='string'){last=addSong(x.title,x.text);n++}});
+      }else{
+        let title=f.name.replace(/\.(cifra\.)?(txt|cifra)$/i,''),text=raw;
+        const m=raw.match(/^@titulo[ \t]+(.+)\r?\n?/);
+        if(m){title=m[1].trim();text=raw.slice(m[0].length)}
+        last=addSong(title,text);n++;
+      }
+    }catch{toast('Arquivo inválido: '+f.name)}
+  }
+  e.target.value='';
+  if(n){persist();fillSongs();loadSong(last);toast(n+' música(s) aberta(s)')}
+};
+
+/* ============ Colar letra + distribuir acordes ============ */
+function chordify(lyrics,chords,beats,per){
+  let ci=0;
+  return lyrics.replace(/\r\n/g,'\n').split('\n').map(line=>{
+    const hd=line.match(/^\s*\[([^\]]*)\]\s*$/);              // [Refrão] -> ## Refrão
+    if(hd)return '## '+hd[1].trim();
+    if(!line.trim())return '';
+    const parts=line.trim().split(/(\s+)/),idx=[];             // posições das palavras
+    parts.forEach((x,i)=>{if(i%2===0)idx.push(i)});
+    const k=Math.min(per,idx.length),at={};
+    for(let j=0;j<k;j++)at[idx[Math.floor(j*idx.length/k)]]=chords[ci++%chords.length];
+    return parts.map((x,i)=>at[i]?`[${at[i]}:${beats}]${x}`:x).join('');
+  }).join('\n');
+}
+$('lyricBtn').onclick=()=>$('lyricDlg').showModal();
+$('lyricCancel').onclick=()=>$('lyricDlg').close();
+$('lyricGo').onclick=()=>{
+  const chords=$('lyricChords').value.trim().split(/\s+/).filter(Boolean);
+  if(!$('lyricIn').value.trim()||!chords.length)return toast('Cole a letra e informe os acordes');
+  const out=chordify($('lyricIn').value,chords,+$('lyricBeats').value||2,Math.max(1,+$('lyricPer').value||3));
+  const t=$('txt');t.value=$('lyricAppend').checked&&t.value.trim()?t.value.replace(/\s+$/,'')+'\n'+out:out;
+  $('lyricDlg').close();tab(false);renderTrain();toast('Letra aplicada. Ajuste os acordes e clique em Salvar');
+};
+
+/* ============ Ajustar cifra (reposiciona acordes) ============ */
+function ajustarCifra(text,chords,b1,b2,merge){
+  const clean=text.replace(/[\u200B-\u200D\uFEFF]/g,'').replace(/\u00A0/g,' ').replace(/\r\n/g,'\n');
+  const out=[];let blk=[];
+  const units=l=>{const p=l.split(/(\s+|-)/);return{p,u:p.map((x,i)=>x&&!/^(\s+|-)$/.test(x)?i:-1).filter(i=>i>=0)}};
+  const place=(line,list)=>{                       // list = [[unidade,acorde,tempos]]
+    const {p,u}=units(line),at={};
+    list.forEach(([k,c,b])=>{at[u[Math.min(k,u.length-1)]]=`[${c}:${b}]`});
+    return p.map((x,i)=>(at[i]||'')+x).join('');
+  };
+  const flush=()=>{
+    const L=[];
+    blk.forEach(l=>{if(merge&&L.length&&l.split(/\s+/).length<=1)L[L.length-1]+=' '+l;else L.push(l)});
+    L.forEach((l,i)=>{
+      const n=units(l).u.length;
+      if(chords.length<2||i%2===0){out.push(place(l,[[0,chords[0],b1]]));return}
+      const rest=chords.slice(1),m=Math.min(rest.length,n),list=[];
+      for(let j=0;j<m;j++){
+        const k=j===0?0:j===m-1?Math.max(1,n-2):Math.round(j*(n-2)/(m-1));
+        list.push([k,rest[j],b2]);
+      }
+      out.push(place(l,list));
+    });
+    blk=[];
+  };
+  clean.split('\n').forEach(raw=>{
+    const l=raw.trim();
+    if(!l||/^#{1,6}[ \t]*\S/.test(l)||l[0]==='@'){flush();out.push(l);return}
+    const t=l.replace(/\[[^\]\n]+\]/g,'').replace(/\s+/g,' ').trim();
+    if(t)blk.push(t);
+  });
+  flush();return out.join('\n');
+}
+$('fixBtn').onclick=()=>$('fixDlg').showModal();
+$('fixCancel').onclick=()=>$('fixDlg').close();
+$('fixGo').onclick=()=>{
+  const ch=$('fixChords').value.trim().split(/\s+/).filter(Boolean);
+  if(!ch.length||!$('txt').value.trim())return toast('Abra uma cifra e informe os acordes');
+  $('txt').value=ajustarCifra($('txt').value,ch,+$('fixB1').value||4,+$('fixB2').value||2,$('fixMerge').checked);
+  $('fixDlg').close();tab(false);renderTrain();toast('Cifra ajustada. Confira e clique em Salvar');
+};
+
+/* ============ Interface ============ */
+$('keysSel').onchange=build;
+$('togglePanel').onclick=()=>$('panel').classList.toggle('open');
+$('helpBtn').onclick=()=>$('help').showModal();
+$('help').addEventListener('click',e=>{if(e.target===$('help'))$('help').close()});
+if(innerWidth>=1024)$('panel').classList.add('open');
+build();fillSongs();loadSong(songs[0]?songs[0].id:'');
+try{if(!localStorage.getItem('pv_seen')){localStorage.setItem('pv_seen','1');$('help').showModal()}}catch{}
+</script>
+</body>
+</html>
