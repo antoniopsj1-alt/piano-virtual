@@ -83,6 +83,7 @@ dialog::backdrop{background:#000a}
         <button id="openBtn" title="Abrir arquivo de cifra (.txt ou .json)" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">📂 Abrir</button>
         <button id="lyricBtn" title="Colar uma letra e distribuir acordes nela" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">📝 Colar letra</button>
         <button id="fixBtn" title="Reorganizar os acordes da cifra aberta" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">🛠 Ajustar cifra</button>
+        <button id="notesBtn" title="Converter notas escritas (Dó Ré Mi... ou C D E...) em cifra melódica" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">🎹 Notas → cifra</button>
         <input id="fileIn" type="file" accept=".txt,.cifra,.json,text/plain,application/json" multiple class="hidden">
       </div>
       <input id="title" placeholder="Título da música" class="mt-1.5 rounded bg-slate-800 px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-cyan-500">
@@ -111,21 +112,26 @@ dialog::backdrop{background:#000a}
       <div id="piano" class="relative flex h-full w-full overflow-hidden rounded-b-xl bg-black shadow-2xl shadow-black"></div>
     </section>
   </main>
-
-  <footer class="shrink-0" style="text-align: center; color: white; font-size: 18px;"> <!-- Início do Rodapé da página -->
-    <p style="text-align: center;">
-      <a href="https://antoniopsj1-alt.github.io/Portfolio-AntonioJunior/" target="_blank" rel="noopener" style="text-decoration: none; color: inherit;">
-        © 2026 Antônio Pereira de Souza Junior.
-      </a>
-    </p>
-    <p style="text-align: center;">Todos os direitos reservados.</p>
-    <address style="text-align: center; color: blue; font-weight: bold;">
-      Contato: <a href="mailto:antoniopsj1@gmail.com">antoniopsj1@gmail.com</a>
-    </address>
-  </footer> <!-- Fim do Rodapé -->
 </div>
 
 <div id="toast" class="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2 rounded bg-slate-800 px-4 py-2 text-sm opacity-0 shadow-lg transition-opacity"></div>
+
+<!-- ===== NOTAS PARA CIFRA ===== -->
+<dialog id="notesDlg" class="w-[min(560px,94vw)] rounded-xl bg-[#121826] p-4 text-sm text-slate-200">
+  <h2 class="mb-2 text-base font-semibold text-white">Converter notas em cifra melódica</h2>
+  <textarea id="notesIn" rows="7" spellcheck="false" placeholder="Digite ou cole as notas, uma frase por linha. Ex.: Dó Dó Sol Sol Lá Lá Sol -   ou   C C G G A A G -" class="w-full rounded bg-[#0a0e17] p-2 font-mono text-sm outline-none focus:ring-1 focus:ring-cyan-500" style="user-select:text"></textarea>
+  <p class="mt-1 text-xs text-slate-400">Aceita Dó Ré Mi Fá Sol Lá Si ou C D E F G A B, com # ou b (Fá#, Sib). Um <b>-</b> prolonga a nota anterior; <b>R</b> ou <b>P</b> é pausa; <b>Sol5</b> fixa a oitava; <b>Mi:2</b> define os tempos. Sem número, a nota sobe até uma quinta acima da anterior; saltos maiores descem. Para outro caso, fixe a oitava (ex.: Dó5).</p>
+  <div class="mt-2 flex flex-wrap items-center gap-3">
+    <label class="flex items-center gap-1.5">Oitava inicial
+      <select id="notesOct" class="rounded bg-slate-800 px-1.5 py-1"><option>3</option><option selected>4</option><option>5</option></select></label>
+    <label class="flex items-center gap-1.5">Tempos por nota <input id="notesDur" type="number" min="0.25" step="0.25" value="1" class="w-16 rounded bg-slate-800 px-2 py-1"></label>
+    <label class="flex items-center gap-1.5"><input id="notesAppend" type="checkbox" checked class="accent-cyan-400"> Adicionar ao final do texto</label>
+  </div>
+  <div class="mt-3 flex justify-end gap-2">
+    <button id="notesCancel" class="rounded bg-slate-800 px-3 py-1.5 hover:bg-slate-700">Cancelar</button>
+    <button id="notesGo" class="rounded bg-cyan-600 px-3 py-1.5 font-medium text-white hover:bg-cyan-500">Converter</button>
+  </div>
+</dialog>
 
 <!-- ===== AJUSTAR CIFRA ===== -->
 <dialog id="fixDlg" class="w-[min(520px,94vw)] rounded-xl bg-[#121826] p-4 text-sm text-slate-200">
@@ -180,7 +186,7 @@ dialog::backdrop{background:#000a}
     <li><code>## Refrão</code> cria uma <b>seção</b> (linha começando com <code>##</code>).</li>
     <li><code>@bpm 120</code> define o andamento ao abrir a música; <code>@info texto</code> mostra uma observação em cinza no Treino.</li>
   </ul>
-  <p>Use <b>Nova</b>, <b>Salvar</b> e <b>Excluir</b> para gerenciar suas músicas. Elas ficam salvas no navegador (LocalStorage). <b>⬇ Baixar</b> gera um arquivo <code>.txt</code> da cifra, <b>⬇ Todas</b> gera um backup <code>.json</code> e <b>📂 Abrir</b> carrega arquivos <code>.txt</code> ou <code>.json</code> (pode escolher vários). <b>🛠 Ajustar cifra</b> refaz a posição e a duração dos acordes do texto aberto (pares de linhas: 1º acorde na linha 1, os demais na linha 2). <b>📝 Colar letra</b> recebe uma letra e distribui uma sequência de acordes (ex.: Am Dm G) pelas palavras de cada linha; depois é só ajustar no Editor. A aba <b>Treino</b> mostra cifras e notas sobre a letra, para você ler enquanto toca.</p>
+  <p>Use <b>Nova</b>, <b>Salvar</b> e <b>Excluir</b> para gerenciar suas músicas. Elas ficam salvas no navegador (LocalStorage). <b>⬇ Baixar</b> gera um arquivo <code>.txt</code> da cifra, <b>⬇ Todas</b> gera um backup <code>.json</code> e <b>📂 Abrir</b> carrega arquivos <code>.txt</code> ou <code>.json</code> (pode escolher vários). <b>🎹 Notas → cifra</b> transforma notas escritas (Dó Ré Mi... ou C D E...) em cifra melódica pronta para tocar. <b>🛠 Ajustar cifra</b> refaz a posição e a duração dos acordes do texto aberto (pares de linhas: 1º acorde na linha 1, os demais na linha 2). <b>📝 Colar letra</b> recebe uma letra e distribui uma sequência de acordes (ex.: Am Dm G) pelas palavras de cada linha; depois é só ajustar no Editor. A aba <b>Treino</b> mostra cifras e notas sobre a letra, para você ler enquanto toca.</p>
   <h3 class="mt-3 font-semibold text-cyan-300">Piano automático e trechos</h3>
   <p>Clique em <b>▶ Tocar</b>: o piano toca o texto e acende as teclas em âmbar. Você escolhe o trecho de três formas:</p>
   <ul class="my-2 list-disc pl-5">
@@ -392,7 +398,29 @@ const DEMO=[
 [Dm]<D4:.5> <E4:.5> <F4:1> <F4:.5> <G4:.5> <A4:1>
 [Dm]<A4:.5> <C5:.5> <D5:1> <D5:.5> <E5:.5> <F5:1>
 [Gm]<F5:.5> <G5:.5> <E5:1> <E5:.5> <D5:.5> <C5:.5> <D5:.5>
-[A]<D5:2> <R:1>`}
+[A]<D5:2> <R:1>`},
+{id:'brilha',title:'Brilha, brilha, estrelinha',text:
+`@bpm 100
+@info Melodia tradicional (domínio público) em Dó maior
+## Estrofe 1
+<C4> <C4> <G4> <G4> <A4> <A4> <G4:2>
+<F4> <F4> <E4> <E4> <D4> <D4> <C4:2>
+## Estrofe 2
+<G4> <G4> <F4> <F4> <E4> <E4> <D4:2>
+<G4> <G4> <F4> <F4> <E4> <E4> <D4:2>
+## Estrofe 3
+<C4> <C4> <G4> <G4> <A4> <A4> <G4:2>
+<F4> <F4> <E4> <E4> <D4> <D4> <C4:2>`},
+{id:'escala-do-re-mi',title:'Dó, ré, mi, fá (escala e exercício)',text:
+`@bpm 90
+@info Escala de Dó maior e o exercício da cantiga escolar
+## Subindo
+<C4> <D4> <E4> <F4> <G4> <A4> <B4> <C5:2>
+## Descendo
+<C5> <B4> <A4> <G4> <F4> <E4> <D4> <C4:2>
+## Exercício
+<C4> <D4> <E4> <F4> <G4> <A4> <B4> <B4> <B4>
+<B4> <A4> <G4> <F4> <F4> <E4> <D4> <C4> <C4> <C4>`}
 ];
 let songs=(()=>{try{return JSON.parse(localStorage.getItem('pv_songs'))||[]}catch{return[]}})();
 let seeded=(()=>{try{return JSON.parse(localStorage.getItem('pv_seeded'))||[]}catch{return[]}})();
@@ -676,6 +704,40 @@ $('fixGo').onclick=()=>{
   if(!ch.length||!$('txt').value.trim())return toast('Abra uma cifra e informe os acordes');
   $('txt').value=ajustarCifra($('txt').value,ch,+$('fixB1').value||4,+$('fixB2').value||2,$('fixMerge').checked);
   $('fixDlg').close();tab(false);renderTrain();toast('Cifra ajustada. Confira e clique em Salvar');
+};
+
+/* ============ Notas escritas -> cifra melódica ============ */
+const SOLF={do:0,'dó':0,c:0,re:2,'ré':2,d:2,mi:4,e:4,fa:5,'fá':5,f:5,sol:7,g:7,la:9,'lá':9,a:9,si:11,b:11};
+function notasParaCifra(txt,oct0,dur){
+  let prev=null,bad=0;const fmt=x=>+(+x).toFixed(2);
+  const lines=txt.replace(/\r\n/g,'\n').split('\n').map(line=>{
+    const out=[];
+    line.replace(/[|,;]/g,' ').trim().split(/\s+/).filter(Boolean).forEach(tok=>{
+      if(tok==='-'||tok==='–'){if(out.length&&!out[out.length-1].bad)out[out.length-1].b+=dur;return}
+      const t=tok.toLowerCase();
+      let m=t.match(/^(r|p|_|pausa)(?::([\d.]+))?$/);
+      if(m){out.push({r:1,b:+(m[2]||dur)});return}
+      m=t.match(/^(do|dó|re|ré|mi|fa|fá|sol|la|lá|si|[a-g])(#|b|♯|♭)?(\d)?(?::([\d.]+))?$/);
+      if(!m){out.push({bad:tok});bad++;return}
+      const pc=((SOLF[m[1]]+(m[2]==='#'||m[2]==='♯'?1:m[2]?-1:0))%12+12)%12;
+      let midi;
+      if(m[3]!==undefined)midi=(+m[3]+1)*12+pc;
+      else if(prev===null)midi=(oct0+1)*12+pc;
+      else{const d=((pc-prev)%12+12)%12;midi=prev+(d<=7?d:d-12)}  // sobe até uma quinta; saltos maiores descem
+      prev=midi;out.push({m:midi,b:+(m[4]||dur)});
+    });
+    return out.map(o=>o.bad?o.bad:o.r?`<R:${fmt(o.b)}>`:`<${midiName(o.m)}:${fmt(o.b)}>`).join(' ');
+  });
+  return{text:lines.join('\n'),bad};
+}
+$('notesBtn').onclick=()=>$('notesDlg').showModal();
+$('notesCancel').onclick=()=>$('notesDlg').close();
+$('notesGo').onclick=()=>{
+  if(!$('notesIn').value.trim())return toast('Digite ou cole as notas');
+  const r=notasParaCifra($('notesIn').value,+$('notesOct').value,+$('notesDur').value||1),t=$('txt');
+  t.value=$('notesAppend').checked&&t.value.trim()?t.value.replace(/\s+$/,'')+'\n'+r.text:r.text;
+  $('notesDlg').close();tab(false);renderTrain();
+  toast(r.bad?`${r.bad} item(ns) não reconhecido(s) ficaram como digitados`:'Notas convertidas. Ajuste e clique em Salvar');
 };
 
 /* ============ Interface ============ */
