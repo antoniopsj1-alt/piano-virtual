@@ -33,6 +33,12 @@ textarea,#train{-webkit-user-select:text;user-select:text}
 .ch.nt{color:#fbbf24}
 .ly{white-space:pre;min-height:1.4em}
 .seg.cur{background:#f59e0b2e;outline:1px solid #f59e0b}
+/* ===== Modo aprendizado ===== */
+@keyframes pulse{50%{filter:brightness(1.18);transform:scale(.995)}}
+.white.target{background:linear-gradient(#bbf7d0,#4ade80)!important;box-shadow:inset 0 0 0 3px #16a34a,0 0 16px #22c55e;animation:pulse 1s infinite}
+.black.target{background:linear-gradient(#4ade80,#15803d)!important;box-shadow:0 0 16px #22c55e;animation:pulse 1s infinite}
+.white.ok,.black.ok{background:linear-gradient(#86efac,#16a34a)!important;animation:none}
+.white.bad,.black.bad{background:linear-gradient(#fca5a5,#ef4444)!important}
 .seg[data-gi]{cursor:pointer}.seg[data-gi]:hover{background:#ffffff12}
 .ch .nt{color:#fbbf24}
 .sec{flex-basis:100%;margin-top:.6rem;padding-bottom:.15rem;border-bottom:1px solid #243049;font:600 .8rem system-ui;color:#94a3b8;cursor:pointer}
@@ -112,11 +118,34 @@ dialog::backdrop{background:#000a}
         <label class="flex items-center gap-1"><input id="loop" type="checkbox" class="accent-amber-400"> Repetir</label>
         <span id="selInfo" class="text-xs text-slate-400"></span>
       </div>
+      <div class="mt-1.5 flex flex-wrap items-center gap-2 border-t border-slate-800 pt-1.5 text-sm">
+        <button id="pracBtn" title="Modo aprendizado: o piano mostra as teclas e espera você tocar" class="rounded bg-emerald-600 px-3 py-1.5 font-semibold text-white hover:bg-emerald-500">🎓 Praticar</button>
+        <label class="flex items-center gap-1.5">Nível
+          <select id="pracLevel" class="rounded bg-slate-800 px-1.5 py-1"><option value="1">Iniciante</option><option value="2">Intermediário</option><option value="3">Avançado</option></select></label>
+        <label class="flex items-center gap-1"><input id="pracAny" type="checkbox" class="accent-emerald-400"> Qualquer oitava</label>
+        <label class="flex items-center gap-1"><input id="pracGuide" type="checkbox" class="accent-emerald-400"> Som-guia</label>
+      </div>
     </aside>
 
     <!-- ===== PIANO ===== -->
-    <section class="order-2 min-h-0 min-w-0 flex-1 p-2 lg:order-1">
-      <div id="piano" class="relative flex h-full w-full overflow-hidden rounded-b-xl bg-black shadow-2xl shadow-black"></div>
+    <section class="order-2 flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2 lg:order-1">
+      <div id="coach" class="hidden shrink-0 rounded-lg border border-emerald-700 bg-[#0f1a17] px-3 py-2 text-sm">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <span id="coachStep" class="rounded bg-emerald-700 px-2 py-0.5 text-xs font-semibold text-white">1/1</span>
+          <span id="coachMain" class="text-base font-semibold text-emerald-200"></span>
+          <span id="coachSub" class="text-xs text-slate-300"></span>
+          <span class="ml-auto flex flex-wrap gap-1.5">
+            <button id="coachHear" title="Ouvir o que deve ser tocado" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">🔊 Ouvir</button>
+            <button id="coachHint" title="Mostrar as teclas" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">💡 Dica</button>
+            <button id="coachSkip" title="Pular este passo" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">⏭ Pular</button>
+            <button id="coachRestart" title="Recomeçar o treino" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">🔁 Recomeçar</button>
+            <button id="coachExit" class="rounded bg-rose-700 px-2 py-1 text-white hover:bg-rose-600">■ Sair</button>
+          </span>
+        </div>
+        <div class="mt-1.5 h-1.5 overflow-hidden rounded bg-slate-800"><div id="coachBar" class="h-full bg-emerald-500 transition-all" style="width:0"></div></div>
+        <div id="coachMsg" class="mt-1 min-h-[1.1rem] text-xs text-amber-300"></div>
+      </div>
+      <div id="piano" class="relative flex min-h-0 w-full flex-1 overflow-hidden rounded-b-xl bg-black shadow-2xl shadow-black"></div>
     </section>
   </main>
 </div>
@@ -219,6 +248,15 @@ dialog::backdrop{background:#000a}
     <li><b>Voltar ou pular sem recomeçar:</b> na aba Treino, <b>clique em qualquer acorde, nota ou título de seção</b> e a música continua dali. Os botões ⏮ e ⏭ voltam ao início da seção ou avançam para a próxima.</li>
   </ul>
   <p>Durante a reprodução aparece o botão <b>⏸ Pausar</b>, que vira <b>▶ Continuar</b> e retoma do ponto onde parou. <b>■ Parar</b> encerra. Ajuste a velocidade em BPM e marque “Repetir” para repetir o trecho.</p>
+  <h3 class="mt-3 font-semibold text-cyan-300">Praticar (modo aprendizado)</h3>
+  <p>Abra uma música e clique em <b>🎓 Praticar</b>. O piano acende em <b style="color:#4ade80">verde</b> as teclas do próximo passo e <b>espera</b> você tocar. Só avança quando você acerta; teclas erradas ficam vermelhas por um instante. Em acordes, segure todas as teclas ao mesmo tempo.</p>
+  <ul class="my-2 list-disc pl-5">
+    <li><b>Iniciante:</b> teclas acesas, nomes das notas e a tecla do computador correspondente.</li>
+    <li><b>Intermediário:</b> só as teclas acesas.</li>
+    <li><b>Avançado:</b> nada aceso; aparece só o nome da nota ou do acorde. Use <b>💡 Dica</b> se precisar.</li>
+    <li><b>🔊 Ouvir</b> toca o passo; <b>Som-guia</b> toca sozinho a cada passo; <b>Qualquer oitava</b> aceita a nota em qualquer oitava.</li>
+    <li>O trecho treinado segue as mesmas regras do autoplay: seleção no Editor, seção escolhida ou música inteira. Clique em um ponto da aba Treino ou use ⏮ ⏭ para ir direto a ele. No fim você vê acertos, erros e a precisão.</li>
+  </ul>
   <h3 class="mt-3 font-semibold text-cyan-300">Músicas de exemplo</h3>
   <p>Os exemplos são cantigas infantis. Para adicionar outras músicas, use <b>📂 Abrir</b> com arquivos <code>.txt</code> ou <code>.json</code>, ou monte a melodia com <b>🎹 Notas → cifra</b>. As músicas que você abrir ou salvar ficam guardadas no navegador.</p>
   <div class="mt-4 text-right"><button id="helpClose2" class="rounded bg-cyan-600 px-4 py-1.5 font-medium text-white hover:bg-cyan-500">Fechar</button></div>
@@ -308,10 +346,11 @@ function light(m,cls,d){
 }
 
 /* ============ Notas e acordes (polifonia) ============ */
+const uStamp=new Map();let stampN=0;   // ordem das teclas pressionadas pelo usuário
 function start(id,midis,cls='on'){
   initAudio();stop(id);
   held.set(id,midis.map(m=>{light(m,cls,1);return{m,cls,v:voice(m)}}));
-  if(id!=='auto')visor(midis[0]);   // o visor reconhece o que o usuário está segurando
+  if(id!=='auto'){uStamp.set(id,++stampN);visor(midis[0]);if(prac.on)pracPress(midis[0])}   // visor + modo aprendizado
 }
 function stop(id){
   const a=held.get(id);if(!a)return;
@@ -382,7 +421,7 @@ function fillSongs(){
 function loadSong(id){
   const s=songs.find(x=>x.id===id);curId=s?s.id:null;
   $('title').value=s?s.title:'';$('txt').value=s?s.text:'';
-  $('songSel').value=curId||'';stopPlay();curGi=-1;applyBpm();renderTrain();selInfo();
+  $('songSel').value=curId||'';stopPlay();if(prac.on)pracStop();curGi=-1;applyBpm();renderTrain();selInfo();
 }
 $('songSel').onchange=e=>loadSong(e.target.value);
 $('newBtn').onclick=()=>{loadSong('');$('title').focus()};
@@ -520,6 +559,7 @@ function step(){
   timers=[setTimeout(()=>stop('auto'),ms*.9),setTimeout(step,ms)];
 }
 function startPlay(from){
+  if(prac.on)pracStop();
   initAudio();const all=parse($('txt').value);list=getList(all);
   if(!list.length)return toast('Nenhuma nota ou acorde no trecho. Veja o Tutorial.');
   tab(true);playing=true;setPaused(false);$('pauseBtn').classList.remove('hidden');$('playBtn').textContent='■ Parar';pos=0;
@@ -528,6 +568,7 @@ function startPlay(from){
 }
 // Pula para qualquer ponto sem recomeçar do zero
 function jump(gi){
+  if(prac.on)return pracJump(gi);
   if(!playing)return startPlay(gi);
   setPaused(false);clearTimers();const all=parse($('txt').value);
   let k=list.findIndex(g=>g.i===gi);if(k<0){list=all;k=gi}
@@ -546,7 +587,7 @@ $('train').addEventListener('click',e=>{
   const g=e.target.closest('[data-gi]');if(g)jump(+g.dataset.gi);
 });
 $('prevSec').onclick=()=>secJump(-1);$('nextSec').onclick=()=>secJump(1);
-$('secSel').onchange=()=>{if(playing){stopPlay();startPlay()}};
+$('secSel').onchange=()=>{if(playing){stopPlay();startPlay()}else if(prac.on)pracStart()};
 $('pauseBtn').onclick=pausePlay;
 $('playBtn').onclick=()=>playing?stopPlay():startPlay();
 
@@ -585,6 +626,106 @@ $('fileIn').onchange=async e=>{
   e.target.value='';
   if(n){persist();fillSongs();loadSong(last);toast(n+' música(s) aberta(s)')}
 };
+
+/* ============ Modo aprendizado (espera o usuário tocar) ============ */
+const prac={on:false,list:[],i:0,req:[],tStamp:0,locked:false,hits:0,errs:0,skips:0,text:'',all:[],hintT:null,done:false};
+const noteLabel=m=>`${NOTA_PT[m%12]} (${midiName(m)})`;
+const PRAISE=['✓ Muito bem!','✓ Isso aí!','✓ Perfeito!','✓ Correto!','✓ Boa!'];
+// leva a nota para dentro das teclas visíveis (mesma nota, outra oitava)
+function pracFold(m){const lo=startMidi,hi=startMidi+keyEls.size-1;while(m<lo)m+=12;while(m>hi)m-=12;return m}
+function pracClear(){keyEls.forEach(el=>el.classList.remove('target','ok','bad'))}
+function pracStart(from){
+  if(playing)stopPlay();
+  initAudio();
+  const text=$('txt').value,all=parse(text),l=getList(all).filter(g=>g.midis.length);
+  if(!l.length)return toast('Nenhuma nota ou acorde no trecho. Veja o Tutorial.');
+  tab(true);
+  Object.assign(prac,{on:true,list:l,i:0,hits:0,errs:0,skips:0,text,all,done:false});
+  if(from!=null){const k=l.findIndex(g=>g.i===from);if(k>=0)prac.i=k}
+  $('coach').classList.remove('hidden');$('pracBtn').textContent='■ Sair do treino';
+  if(innerWidth<1024)$('panel').classList.remove('open');   // celular: mais espaço para o piano
+  pracShow();
+}
+function pracStop(){
+  prac.on=false;clearTimeout(prac.hintT);pracClear();stop('auto');
+  $('coach').classList.add('hidden');$('pracBtn').textContent='🎓 Praticar';
+  $('train').querySelectorAll('.cur').forEach(e=>e.classList.remove('cur'));
+}
+function pracShow(){
+  clearTimeout(prac.hintT);pracClear();
+  const g=prac.list[prac.i];if(!g)return pracFinish();
+  const base=g.labels.some(l=>l.ch)&&g.midis.some(m=>m>=48)?g.midis.filter(m=>m>=48):g.midis;  // acorde: sem o baixo extra
+  prac.req=[...new Set(base.map(pracFold))].sort((a,b)=>a-b);
+  prac.locked=false;prac.tStamp=stampN;curGi=g.i;mark(g.i);
+  const lv=+$('pracLevel').value,d=describe(prac.req,prac.req[0],true);
+  if(lv<3)prac.req.forEach(m=>keyEls.get(m)&&keyEls.get(m).classList.add('target'));
+  const pc=prac.req.map(m=>keyOf[m-startMidi-shift]).filter(Boolean).map(x=>x.toUpperCase()).join(' ');
+  const nx=prac.all[g.i+1],lyr=prac.text.slice(g.end,nx?nx.start:prac.text.length).trim().split('\n')[0].slice(0,32);
+  let sub=lv===1?'Teclas: '+prac.req.map(noteLabel).join(' · ')+(pc?`  ·  Teclado do PC: ${pc}`:'')
+    :lv===2?'Toque as teclas verdes':'Sem teclas acesas: use 💡 Dica se precisar';
+  if(lyr&&lyr[0]!=='#'&&lyr[0]!=='@')sub+=`  ·  Letra: “${lyr}”`;
+  $('coachStep').textContent=`${prac.i+1}/${prac.list.length}`;
+  $('coachMain').textContent=`${d.tok}  ${d.txt}`;$('coachSub').textContent=sub;
+  $('coachBar').style.width=Math.round(100*prac.i/prac.list.length)+'%';
+  $('coachMsg').style.color='#fcd34d';
+  $('coachMsg').textContent=prac.req.length>1?'Segure todas as teclas ao mesmo tempo.':'Toque a tecla indicada.';
+  if($('pracGuide').checked)pracHear();
+}
+function pracHear(){
+  if(!prac.on||!prac.list[prac.i])return;
+  start('auto',prac.req,'auto');clearTimeout(pracHear.t);pracHear.t=setTimeout(()=>stop('auto'),800);
+}
+function pracHint(){
+  if(!prac.on||!prac.list[prac.i])return;
+  prac.req.forEach(m=>keyEls.get(m)&&keyEls.get(m).classList.add('target'));
+  $('coachMsg').style.color='#fcd34d';$('coachMsg').textContent='Dica: '+prac.req.map(noteLabel).join(' + ');
+  clearTimeout(prac.hintT);
+  if(+$('pracLevel').value===3)prac.hintT=setTimeout(()=>prac.req.forEach(m=>keyEls.get(m)&&keyEls.get(m).classList.remove('target')),2500);
+}
+// chamado a cada tecla que o usuário pressiona
+function pracPress(m0){
+  if(!prac.on||prac.locked||!prac.list[prac.i])return;
+  const U=new Set();   // só teclas pressionadas depois que o passo apareceu
+  held.forEach((a,id)=>{if(id!=='auto'&&(uStamp.get(id)||0)>prac.tStamp)a.forEach(x=>U.add(x.m))});
+  const any=$('pracAny').checked,have=any?new Set([...U].map(m=>m%12)):U,key=m=>any?m%12:m;
+  prac.req.filter(m=>have.has(key(m))).forEach(m=>keyEls.get(m)&&keyEls.get(m).classList.add('ok'));
+  if(prac.req.every(m=>have.has(key(m)))){
+    prac.locked=true;prac.hits++;
+    $('coachMsg').style.color='#4ade80';$('coachMsg').textContent=PRAISE[prac.hits%PRAISE.length];
+    setTimeout(()=>{if(prac.on){prac.i++;pracShow()}},380);
+    return;
+  }
+  if(!prac.req.some(m=>key(m)===key(m0))){        // tecla errada
+    prac.errs++;const el=keyEls.get(m0);
+    if(el){el.classList.add('bad');setTimeout(()=>el.classList.remove('bad'),350)}
+    const lv=+$('pracLevel').value;
+    $('coachMsg').style.color='#fca5a5';
+    $('coachMsg').textContent=lv<3?`Ops! Você tocou ${noteLabel(m0)}. Procure ${prac.req.length>1?'as teclas verdes':'a tecla verde'}.`:'Não foi essa. Tente de novo ou use 💡 Dica.';
+  }else{
+    const falta=prac.req.filter(m=>!have.has(key(m)));
+    $('coachMsg').style.color='#fcd34d';$('coachMsg').textContent=`Certo! Falta: ${falta.map(noteLabel).join(' + ')}`;
+  }
+}
+function pracFinish(){
+  pracClear();prac.locked=true;prac.done=true;
+  const tot=prac.hits+prac.errs+prac.skips,pct=tot?Math.round(100*prac.hits/tot):0;
+  $('coachStep').textContent='✔';$('coachMain').textContent='🎉 Treino concluído!';
+  $('coachSub').textContent=`${prac.hits} acertos · ${prac.errs} erros · ${prac.skips} pulados · ${pct}% de precisão`;
+  $('coachBar').style.width='100%';$('coachMsg').style.color='#4ade80';
+  $('coachMsg').textContent=pct>=90?'Excelente! Experimente o próximo nível.':pct>=70?'Muito bom! Repita para fixar.':'Continue praticando: repita e use a Dica.';
+}
+function pracJump(gi){
+  let k=prac.list.findIndex(g=>g.i===gi);
+  if(k<0){prac.list=prac.all.filter(g=>g.midis.length);k=prac.list.findIndex(g=>g.i===gi)}
+  if(k<0)return;
+  prac.i=k;prac.done=false;pracShow();
+}
+$('pracBtn').onclick=()=>prac.on?pracStop():pracStart();
+$('coachExit').onclick=pracStop;
+$('coachHear').onclick=pracHear;$('coachHint').onclick=pracHint;
+$('coachSkip').onclick=()=>{if(prac.on&&prac.list[prac.i]){prac.skips++;prac.i++;pracShow()}};
+$('coachRestart').onclick=()=>{if(prac.on){Object.assign(prac,{i:0,hits:0,errs:0,skips:0,done:false});pracShow()}};
+$('pracLevel').onchange=()=>{if(prac.on&&prac.list[prac.i])pracShow()};
 
 /* ============ Colar letra + distribuir acordes ============ */
 function chordify(lyrics,chords,beats,per){
@@ -702,22 +843,22 @@ function detectChord(midis){
   }
   return null;
 }
+function describe(midis,last,all){
+  const pcs=new Set(midis.map(m=>m%12)),c=pcs.size>=2?detectChord(midis):null;
+  if(c){
+    const [suf,nm]=CHD[c.key],sl=c.bass!==c.pc&&c.key!=='power';
+    return{tok:`[${NAMES[c.pc]}${suf}${sl?'/'+NAMES[c.bass]:''}]`,txt:`Acorde ${NOTA_PT[c.pc]} ${nm}${sl?` (baixo ${NOTA_PT[c.bass]})`:''}`};
+  }
+  if(pcs.size>=3||(all&&pcs.size>=2)){                      // grupo de notas sem nome de acorde
+    const l=[...new Set(midis)].sort((a,b)=>a-b);
+    return{tok:l.map(m=>`<${NAMES[m%12]}>`).join(''),txt:'Notas '+l.map(m=>NOTA_PT[m%12]).join(', ')};
+  }
+  return{tok:`<${NAMES[last%12]}>`,txt:`Nota ${NOTA_PT[last%12]} · ${NAMES[last%12]}${Math.floor(last/12)-1}`};
+}
 function visor(last){
   const midis=[];held.forEach((a,id)=>{if(id!=='auto')a.forEach(x=>midis.push(x.m))});
   if(!midis.length)midis.push(last);
-  const pcs=new Set(midis.map(m=>m%12)),c=pcs.size>=2?detectChord(midis):null;
-  let tok,txt;
-  if(c){
-    const [suf,nm]=CHD[c.key],sl=c.bass!==c.pc&&c.key!=='power';
-    tok=`[${NAMES[c.pc]}${suf}${sl?'/'+NAMES[c.bass]:''}]`;
-    txt=`Acorde ${NOTA_PT[c.pc]} ${nm}${sl?` (baixo ${NOTA_PT[c.bass]})`:''}`;
-  }else if(pcs.size>=3){                                  // grupo de notas sem nome de acorde
-    const l=[...new Set(midis)].sort((a,b)=>a-b);
-    tok=l.map(m=>`<${NAMES[m%12]}>`).join('');txt='Notas '+l.map(m=>NOTA_PT[m%12]).join(', ');
-  }else{
-    tok=`<${NAMES[last%12]}>`;txt=`Nota ${NOTA_PT[last%12]} · ${NAMES[last%12]}${Math.floor(last/12)-1}`;
-  }
-  $('visorTok').textContent=tok;$('visorTxt').textContent=txt;
+  const d=describe(midis,last);$('visorTok').textContent=d.tok;$('visorTxt').textContent=d.txt;
 }
 
 /* ============ Configuração das teclas do computador ============ */
@@ -748,7 +889,7 @@ $('keysReset').onclick=()=>{loadKeys(true);capture=null;saveKeys();labelKeys();r
 $('helpClose').onclick=$('helpClose2').onclick=()=>$('help').close();
 
 /* ============ Interface ============ */
-$('keysSel').onchange=build;
+$('keysSel').onchange=()=>{build();if(prac.on)pracShow()};
 $('togglePanel').onclick=()=>$('panel').classList.toggle('open');
 $('helpBtn').onclick=()=>$('help').showModal();
 $('help').addEventListener('click',e=>{if(e.target===$('help'))$('help').close()});
