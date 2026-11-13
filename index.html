@@ -194,7 +194,7 @@ dialog::backdrop{background:#000a}
     <button id="helpClose" class="rounded bg-slate-800 px-3 py-1 hover:bg-slate-700">✕ Fechar</button>
   </div>
   <h3 class="mt-3 font-semibold text-cyan-300">Tocar</h3>
-  <p>Clique ou toque nas teclas. Vários dedos ao mesmo tempo formam acordes. No PC, use o teclado: fileira <code>Z S X D C V G B H N J M</code> (primeira oitava) e <code>Q 2 W 3 E R 5 T 6 Y 7 U I 9 O 0 P</code> (oitavas seguintes). Use as setas <code>←</code> e <code>→</code> para mover o teclado do PC uma oitava. Use <b>⚙ Teclas</b> para escolher qual tecla do computador toca cada nota. O <b>visor</b> no topo mostra a última nota (<code>&lt;C&gt;</code>, “Nota Dó”) ou acorde (<code>[C]</code>, “Acorde Dó Maior”) que você tocou. No celular, gire para o modo paisagem se usar muitas teclas.</p>
+  <p>Clique ou toque nas teclas. Vários dedos ao mesmo tempo formam acordes. No PC, use o teclado: fileira <code>Z S X D C V G B H N J M</code> (primeira oitava) e <code>Q 2 W 3 E R 5 T 6 Y 7 U I 9 O 0 P</code> (oitavas seguintes). Use as setas <code>←</code> e <code>→</code> para mover o teclado do PC uma oitava. Use <b>⚙ Teclas</b> para escolher qual tecla do computador toca cada nota. O <b>visor</b> no topo mostra a última nota (<code>&lt;C&gt;</code>, “Nota Dó”) ou acorde (<code>[C]</code>, “Acorde Dó Maior”) que você tocou. Ao segurar várias teclas juntas, ele reconhece o acorde formado (ex.: C4 + E4 + G4 = Acorde Dó Maior; também reconhece inversões). No celular, gire para o modo paisagem se usar muitas teclas.</p>
   <h3 class="mt-3 font-semibold text-cyan-300">Quantidade de teclas e timbre</h3>
   <p>Escolha 8 (Dó a Dó), 12, 24, 36 ou 61 teclas. O piano ocupa toda a área disponível e mantém a proporção entre teclas brancas e pretas. Troque o timbre entre piano, órgão e synth.</p>
   <h3 class="mt-3 font-semibold text-cyan-300">Acorde de um botão</h3>
@@ -311,13 +311,14 @@ function light(m,cls,d){
 function start(id,midis,cls='on'){
   initAudio();stop(id);
   held.set(id,midis.map(m=>{light(m,cls,1);return{m,cls,v:voice(m)}}));
+  if(id!=='auto')visor(midis[0]);   // o visor reconhece o que o usuário está segurando
 }
 function stop(id){
   const a=held.get(id);if(!a)return;
   a.forEach(x=>{x.v.release();light(x.m,x.cls,-1)});held.delete(id);
 }
 function stopAll(){[...held.keys()].forEach(stop)}
-function notesFor(m){visor(m);return $('chordOn').checked?CH[$('chordSel').value].map(i=>m+i):[m]}
+function notesFor(m){return $('chordOn').checked?CH[$('chordSel').value].map(i=>m+i):[m]}
 const keyAt=el=>{const k=el&&el.closest&&el.closest('[data-m]');return k?+k.dataset.m:null};
 
 /* ---- Mouse ---- */
@@ -687,15 +688,36 @@ $('notesGo').onclick=()=>{
 
 /* ============ Visor: última nota ou acorde tocado ============ */
 const NOTA_PT=['Dó','Dó#','Ré','Ré#','Mi','Fá','Fá#','Sol','Sol#','Lá','Lá#','Si'];
-const CHD={maior:['','Maior'],menor:['m','Menor'],'7':['7','com Sétima (7)'],maj7:['maj7','Maior com Sétima Maior'],m7:['m7','Menor com Sétima'],dim:['dim','Diminuto'],sus4:['sus4','Suspenso (sus4)'],aug:['aug','Aumentado'],power:['5','Power (5)']};
-function visor(m){
-  const pc=m%12,oct=Math.floor(m/12)-1,n=NAMES[pc];
-  if($('chordOn').checked){
-    const [suf,nm]=CHD[$('chordSel').value];
-    $('visorTok').textContent=`[${n}${suf}]`;$('visorTxt').textContent=`Acorde ${NOTA_PT[pc]} ${nm}`;
-  }else{
-    $('visorTok').textContent=`<${n}>`;$('visorTxt').textContent=`Nota ${NOTA_PT[pc]} · ${n}${oct}`;
+const CHD={maior:['','Maior'],menor:['m','Menor'],'7':['7','com Sétima (7)'],maj7:['maj7','Maior com Sétima Maior'],m7:['m7','Menor com Sétima'],dim:['dim','Diminuto'],sus4:['sus4','Suspenso (sus4)'],aug:['aug','Aumentado'],power:['5','Power (5)'],sus2:['sus2','Suspenso 2 (sus2)'],'6':['6','com Sexta (6)'],m6:['m6','Menor com Sexta (m6)'],dim7:['dim7','Diminuto com Sétima (dim7)'],m7b5:['m7b5','Meio-diminuto (m7b5)']};
+// Modelos de acordes: intervalos (em semitons) a partir da fundamental
+const CHORDS=[[[0,4,7],'maior'],[[0,3,7],'menor'],[[0,3,6],'dim'],[[0,4,8],'aug'],[[0,5,7],'sus4'],[[0,2,7],'sus2'],
+  [[0,4,7,10],'7'],[[0,4,7,11],'maj7'],[[0,3,7,10],'m7'],[[0,4,7,9],'6'],[[0,3,7,9],'m6'],[[0,3,6,9],'dim7'],[[0,3,6,10],'m7b5'],[[0,7],'power']];
+// Reconhece o acorde nas notas seguradas (aceita inversões; testa o grave como fundamental primeiro)
+function detectChord(midis){
+  const low=Math.min(...midis)%12,pcs=[...new Set(midis.map(m=>m%12))];
+  for(const r of [low,...pcs.filter(p=>p!==low)]){
+    const iv=pcs.map(p=>(p-r+12)%12).sort((a,b)=>a-b).join();
+    const hit=CHORDS.find(([t])=>t.join()===iv);
+    if(hit)return{pc:r,key:hit[1],bass:low};
   }
+  return null;
+}
+function visor(last){
+  const midis=[];held.forEach((a,id)=>{if(id!=='auto')a.forEach(x=>midis.push(x.m))});
+  if(!midis.length)midis.push(last);
+  const pcs=new Set(midis.map(m=>m%12)),c=pcs.size>=2?detectChord(midis):null;
+  let tok,txt;
+  if(c){
+    const [suf,nm]=CHD[c.key],sl=c.bass!==c.pc&&c.key!=='power';
+    tok=`[${NAMES[c.pc]}${suf}${sl?'/'+NAMES[c.bass]:''}]`;
+    txt=`Acorde ${NOTA_PT[c.pc]} ${nm}${sl?` (baixo ${NOTA_PT[c.bass]})`:''}`;
+  }else if(pcs.size>=3){                                  // grupo de notas sem nome de acorde
+    const l=[...new Set(midis)].sort((a,b)=>a-b);
+    tok=l.map(m=>`<${NAMES[m%12]}>`).join('');txt='Notas '+l.map(m=>NOTA_PT[m%12]).join(', ');
+  }else{
+    tok=`<${NAMES[last%12]}>`;txt=`Nota ${NOTA_PT[last%12]} · ${NAMES[last%12]}${Math.floor(last/12)-1}`;
+  }
+  $('visorTok').textContent=tok;$('visorTxt').textContent=txt;
 }
 
 /* ============ Configuração das teclas do computador ============ */
