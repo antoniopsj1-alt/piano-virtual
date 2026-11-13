@@ -65,9 +65,14 @@ dialog::backdrop{background:#000a}
         <option value="maj7">Maior 7M</option><option value="m7">Menor 7</option><option value="dim">Diminuto</option>
         <option value="sus4">Sus4</option><option value="aug">Aumentado</option><option value="power">Power (5)</option>
       </select></label>
-    <div class="ml-auto flex gap-2">
+    <div class="ml-auto flex flex-wrap items-center gap-2">
+      <div id="visor" aria-live="polite" title="Última nota ou acorde tocado" class="flex min-w-[11rem] items-center gap-2 rounded border border-cyan-900 bg-[#0a0e17] px-3 py-1">
+        <span id="visorTok" class="font-mono text-lg font-bold text-cyan-300">—</span>
+        <span id="visorTxt" class="text-xs text-slate-300">Toque uma tecla</span>
+      </div>
       <button id="togglePanel" class="rounded bg-cyan-600 px-3 py-1 font-medium text-white hover:bg-cyan-500">Cifras</button>
       <button id="helpBtn" class="rounded bg-slate-800 px-3 py-1 hover:bg-slate-700" aria-label="Tutorial">? Tutorial</button>
+      <button id="keysBtn" class="rounded bg-slate-800 px-3 py-1 hover:bg-slate-700" title="Configurar as teclas do computador">⚙ Teclas</button>
     </div>
   </header>
 
@@ -168,11 +173,28 @@ dialog::backdrop{background:#000a}
   </div>
 </dialog>
 
+<!-- ===== TECLAS DO COMPUTADOR ===== -->
+<dialog id="keysDlg" class="max-h-[88vh] w-[min(540px,94vw)] overflow-auto rounded-xl bg-[#121826] p-4 text-sm text-slate-200">
+  <div class="sticky top-0 z-10 -mx-4 -mt-4 mb-2 flex items-center justify-between bg-[#121826] px-4 py-3">
+    <h2 class="text-base font-semibold text-white">Teclas do computador</h2>
+    <button id="keysClose" class="rounded bg-slate-800 px-3 py-1 hover:bg-slate-700">✕ Fechar</button>
+  </div>
+  <p class="mb-2 text-xs text-slate-400">Toque em uma nota e depois pressione a tecla do computador que quer usar para ela. <b>Backspace</b> ou <b>Delete</b> remove a tecla, <b>Esc</b> cancela. As setas ← → continuam deslocando uma oitava. A configuração fica salva neste navegador.</p>
+  <div id="keysList" class="grid grid-cols-2 gap-1.5 sm:grid-cols-3"></div>
+  <div class="mt-3 flex justify-end gap-2">
+    <button id="keysReset" class="rounded bg-slate-800 px-3 py-1.5 hover:bg-slate-700">Restaurar padrão</button>
+    <button id="keysClose2" class="rounded bg-cyan-600 px-3 py-1.5 font-medium text-white hover:bg-cyan-500">Concluir</button>
+  </div>
+</dialog>
+
 <!-- ===== TUTORIAL ===== -->
 <dialog id="help" class="max-h-[85vh] w-[min(640px,92vw)] overflow-auto rounded-xl bg-[#121826] p-5 text-sm leading-relaxed text-slate-200">
-  <h2 class="mb-3 text-lg font-semibold text-white">Como usar</h2>
+  <div class="sticky top-0 z-10 -mx-5 -mt-5 mb-3 flex items-center justify-between bg-[#121826] px-5 py-3">
+    <h2 class="text-lg font-semibold text-white">Como usar</h2>
+    <button id="helpClose" class="rounded bg-slate-800 px-3 py-1 hover:bg-slate-700">✕ Fechar</button>
+  </div>
   <h3 class="mt-3 font-semibold text-cyan-300">Tocar</h3>
-  <p>Clique ou toque nas teclas. Vários dedos ao mesmo tempo formam acordes. No PC, use o teclado: fileira <code>Z S X D C V G B H N J M</code> (primeira oitava) e <code>Q 2 W 3 E R 5 T 6 Y 7 U I 9 O 0 P</code> (oitavas seguintes). Use as setas <code>←</code> e <code>→</code> para mover o teclado do PC uma oitava. No celular, gire para o modo paisagem se usar muitas teclas.</p>
+  <p>Clique ou toque nas teclas. Vários dedos ao mesmo tempo formam acordes. No PC, use o teclado: fileira <code>Z S X D C V G B H N J M</code> (primeira oitava) e <code>Q 2 W 3 E R 5 T 6 Y 7 U I 9 O 0 P</code> (oitavas seguintes). Use as setas <code>←</code> e <code>→</code> para mover o teclado do PC uma oitava. Use <b>⚙ Teclas</b> para escolher qual tecla do computador toca cada nota. O <b>visor</b> no topo mostra a última nota (<code>&lt;C&gt;</code>, “Nota Dó”) ou acorde (<code>[C]</code>, “Acorde Dó Maior”) que você tocou. No celular, gire para o modo paisagem se usar muitas teclas.</p>
   <h3 class="mt-3 font-semibold text-cyan-300">Quantidade de teclas e timbre</h3>
   <p>Escolha 8 (Dó a Dó), 12, 24, 36 ou 61 teclas. O piano ocupa toda a área disponível e mantém a proporção entre teclas brancas e pretas. Troque o timbre entre piano, órgão e synth.</p>
   <h3 class="mt-3 font-semibold text-cyan-300">Acorde de um botão</h3>
@@ -199,6 +221,7 @@ dialog::backdrop{background:#000a}
   <p>Durante a reprodução aparece o botão <b>⏸ Pausar</b>, que vira <b>▶ Continuar</b> e retoma do ponto onde parou. <b>■ Parar</b> encerra. Ajuste a velocidade em BPM e marque “Repetir” para repetir o trecho.</p>
   <h3 class="mt-3 font-semibold text-cyan-300">Músicas de exemplo</h3>
   <p>Os exemplos são cantigas infantis. Para adicionar outras músicas, use <b>📂 Abrir</b> com arquivos <code>.txt</code> ou <code>.json</code>, ou monte a melodia com <b>🎹 Notas → cifra</b>. As músicas que você abrir ou salvar ficam guardadas no navegador.</p>
+  <div class="mt-4 text-right"><button id="helpClose2" class="rounded bg-cyan-600 px-4 py-1.5 font-medium text-white hover:bg-cyan-500">Fechar</button></div>
 </dialog>
 
 <script>
@@ -211,7 +234,13 @@ const midiName=m=>NAMES[m%12]+(Math.floor(m/12)-1);
 const freq=m=>440*2**((m-69)/12);
 const CH={maior:[0,4,7],menor:[0,3,7],'7':[0,4,7,10],maj7:[0,4,7,11],m7:[0,3,7,10],dim:[0,3,6],sus4:[0,5,7],aug:[0,4,8],power:[0,7,12]};
 const START={13:60,12:60,24:48,36:48,61:36}; // MIDI da primeira tecla (60 = C4)
-const KM='zsxdcvgbhnjm'+'q2w3er5t6y7ui9o0p'; // teclado do PC: posição = deslocamento em semitons
+const KM_DEF='zsxdcvgbhnjm'+'q2w3er5t6y7ui9o0p'; // padrão: posição = deslocamento em semitons a partir da 1ª tecla
+let keyOf=[]; // keyOf[deslocamento] = tecla do computador ('' = sem tecla)
+function loadKeys(def){
+  let a=null;if(!def){try{a=JSON.parse(localStorage.getItem('pv_keymap'))}catch{}}
+  keyOf=Array.from({length:61},(_,i)=>Array.isArray(a)?(typeof a[i]==='string'?a[i]:''):(KM_DEF[i]||''));
+}
+loadKeys();
 const $=id=>document.getElementById(id);
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function toast(t){const e=$('toast');e.textContent=t;e.style.opacity=1;clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.opacity=0,1800)}
@@ -271,7 +300,7 @@ function build(){
   labelKeys();
 }
 function labelKeys(){
-  keyEls.forEach((el,m)=>{const i=m-startMidi-shift;el.querySelector('.kb').textContent=i>=0&&i<KM.length?KM[i].toUpperCase():''});
+  keyEls.forEach((el,m)=>{const i=m-startMidi-shift;el.querySelector('.kb').textContent=i>=0&&keyOf[i]?keyOf[i].toUpperCase():''});
 }
 function light(m,cls,d){
   const el=keyEls.get(m);if(!el)return;
@@ -288,7 +317,7 @@ function stop(id){
   a.forEach(x=>{x.v.release();light(x.m,x.cls,-1)});held.delete(id);
 }
 function stopAll(){[...held.keys()].forEach(stop)}
-function notesFor(m){return $('chordOn').checked?CH[$('chordSel').value].map(i=>m+i):[m]}
+function notesFor(m){visor(m);return $('chordOn').checked?CH[$('chordSel').value].map(i=>m+i):[m]}
 const keyAt=el=>{const k=el&&el.closest&&el.closest('[data-m]');return k?+k.dataset.m:null};
 
 /* ---- Mouse ---- */
@@ -313,6 +342,7 @@ piano.addEventListener('touchend',endTouch);piano.addEventListener('touchcancel'
 /* ---- Teclado do PC ---- */
 const typing=e=>/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
 addEventListener('keydown',e=>{
+  if($('keysDlg').open){cfgKey(e);return}  // janela de configuração aberta
   if(typing(e)||e.ctrlKey||e.metaKey||e.altKey)return;
   if(e.key==='ArrowLeft'||e.key==='ArrowRight'){
     const n=shift+(e.key==='ArrowRight'?12:-12);
@@ -320,7 +350,7 @@ addEventListener('keydown',e=>{
     return;
   }
   if(e.repeat)return;
-  const i=KM.indexOf(e.key.toLowerCase());if(i<0)return;
+  const i=keyOf.indexOf(e.key.toLowerCase());if(i<0)return;
   const m=startMidi+shift+i;if(keyEls.has(m))start('k'+e.key.toLowerCase(),notesFor(m));
 });
 addEventListener('keyup',e=>stop('k'+e.key.toLowerCase()));
@@ -328,14 +358,14 @@ addEventListener('blur',stopAll);
 
 /* ============ Gerenciador de músicas (CRUD + LocalStorage) ============ */
 const DEMO=[
-{id:"parabens",title:"Parabéns pra Você (exemplo)",text:"@info Parabéns para você.\n@info Clássico Infantil\n[C]<G4:.75>Pa<G4:.25>ra<A4>béns <G4>pra <C5>vo<B4:2>cê\n\n[G]<G4:.75>Nes<G4:.25>ta <A4>da<G4>ta <D5>que<C5:2>ri<R>da\n\n[C]<G4:.75>Muitas <G4:.25>fe<G5>li<E5>ci<C5>da<B4>des<A4:2>\n[F]<F5:.75>Mui<F5:.25>tos <E5>a<C5>nos <D5>de <C5:3>vi<R>da"},
-{id:"do-re-mi-fa",title:"Dó, ré, mi, fá (escala e exercício)",text:"@Dó Ré Mi Fá\n@info Clássico Infantil (Escala de Dó maior)\n## 1ª frase: DÓ RÉ MI FÁ FÁ FÁ\n<C4:.5>DÓ <D4:.5>RÉ <E4:.5>MI <F4:.5>FÁ  \n<F4>FÁ \n<F4>FÁ\n## 2ª frase: DÓ RÉ DÓ RÉ RÉ RÉ\n<C4:.5>DÓ <D4:.5>RÉ <C4:.5>DÓ <D4:.5>RÉ \n<D4>RÉ \n<D4>RÉ\n## 3ª frase: DÓ SOL FÁ MI MI MI\n<C4:.5>DÓ <G4:.5>SOL <F4:.5>FÁ <E4:.5>MI \n<E4>MI \n<E4>MI\n## 4ª frase: DÓ RÉ MI FÁ FÁ FÁ\n<C4:.5>DÓ <D4:.5>RÉ <E4:.5>MI <F4:.5>FÁ \n<F4>FÁ \n<F4>FÁ"},
+{id:"parabens",title:"Parabéns pra Você",text:"@info Parabéns para você.\n@info Clássico Infantil\n[C]<G4:.75>Pa<G4:.25>ra<A4>béns <G4>pra <C5>vo<B4:2>cê\n\n[G]<G4:.75>Nes<G4:.25>ta <A4>da<G4>ta <D5>que<C5:2>ri<R>da\n\n[C]<G4:.75>Muitas <G4:.25>fe<G5>li<E5>ci<C5>da<B4>des<A4:2>\n[F]<F5:.75>Mui<F5:.25>tos <E5>a<C5>nos <D5>de <C5:3>vi<R>da"},
+{id:"do-re-mi-fa",title:"Dó, ré, mi, fá",text:"@Dó Ré Mi Fá\n@info Clássico Infantil (Escala de Dó maior)\n## 1ª frase: DÓ RÉ MI FÁ FÁ FÁ\n<C4:.5>DÓ <D4:.5>RÉ <E4:.5>MI <F4:.5>FÁ  \n<F4>FÁ \n<F4>FÁ\n## 2ª frase: DÓ RÉ DÓ RÉ RÉ RÉ\n<C4:.5>DÓ <D4:.5>RÉ <C4:.5>DÓ <D4:.5>RÉ \n<D4>RÉ \n<D4>RÉ\n## 3ª frase: DÓ SOL FÁ MI MI MI\n<C4:.5>DÓ <G4:.5>SOL <F4:.5>FÁ <E4:.5>MI \n<E4>MI \n<E4>MI\n## 4ª frase: DÓ RÉ MI FÁ FÁ FÁ\n<C4:.5>DÓ <D4:.5>RÉ <E4:.5>MI <F4:.5>FÁ \n<F4>FÁ \n<F4>FÁ"},
 {id:"brilha-estrelinha",title:"Brilha, brilha, estrelinha",text:"@Clássico Infantil\n@info Brilha, Brilha Estrelinha (em Dó maior)\n## Brilha, brilha estrelinha\n<C4>Bri<C4>lha, <G4>bri<G4>lha <A4>es<A4>tre<G4:2>linha \n## Quero ver você brilhar\n<F4>Que<F4>ro <E4>ver <E4>vo<D4>cê <D4>bri <C4:2>lhar\n## Lá no alto, lá no céu\n<G4>Lá <G4>no <F4>al<F4>to, <E4>lá <E4>no <D4:2>céu\n## Num desenho de cordel\n<G4>no <G4>de<F4>se<F4>nho <E4>de <E4>cor<D4:2>del\n## Brilha, brilha estrelinha\n<C4>Bri<C4>lha, <G4>bri<G4>lha <A4>es<A4>tre<G4:2>linha\n## Baila, linda bailarina\n<F4>Bai<F4>la <E4>lin<E4>da <D4>bai<D4>la<C4:2>rina"},
 {id:"sonic",title:"Sonic",text:"@info Sonic\n@info Game (Melódia)\n## Introdução\n<E4:.5> <C#4:.5> <C#4:.5> <C#4:.5> <D4:.5>\n<B3>\n<C#4:.5> <C#4:.5> <C#4:.5> <A3:.5> <G3:.5>\n<B3:1> \n<A3:.5> <E4:.5> <A4:.5>\n<E4>\n<G#4:.5>\n<A4:.5>\n## Primeira Parte\n<B3:1> <A3:1> <B3:1> <A3:1>\n<B3:.5> <A3:.5> <C4:1> \n<B3:1> <A3:2>\n<A3:1> <B3:1> <C4:.5> <A3:1> <B3:1> <C4:.5>\n<C4:1>\n<B3:2>\n\n## Segunda Parte\n<C5:.5> <A4:1> \n<C5:.5> <B4:1> \n<C5:.5> <B4:1>\n<G4:2>\n\n<G4:.5> <E5:.5> <D5:1> \n<C5:.5> <B4:1> \n<C5:.5> <B4:1>\n<G4:2>\n\n## Terceira Parte\n<C5:.5> <A4:1> \n<C5:.5> <B4:1> \n<C5:.5> <B4:1>\n<G4:2>\n\n<A4:.5> <A4:.5> <F4:1> \n<A4:.5> <G4:1> \n<A4:.5> <G4:1>\n<C4:2>\n\n## Quarta Parte\n<C4:.5> <C4:.5> <E4:.5>\n<D4:3>\n<A3:.5> <C4:.5>\n<E4:3>"},
-{id:"super-mario-bros",title:"Tema Super Mario Bros (simplificado)",text:"@info Super Mario Bros\n@info Game (Melódia)\n## Introdução\n<E5:.5> <E5:.5> <R:.5> <E5:.5> <R:.5> <C5:.5> <E5:1>\n<G5:2> <G4:2>\n## Primeira Parte\n<C5:1.5> <G4:1.5> <E4:1>\n<R:.5> <A4:.5> <R:.5> <B4:.5> <R:.5> <Bb4:.5> <A4:1>\n<G4:.5> <E5:.5> <G5:.5> <A5:1> <F5:.5> <G5:.5> <R:.5> <E5:.5>\n<C5:.5> <D5:.5> <B4:1.5> <R:1.5>\n## Segunda Parte\n<C5:1.5> <G4:1.5> <E4:1>\n<R:.5> <A4:.5> <R:.5> <B4:.5> <R:.5> <Bb4:.5> <A4:1>\n<G4:.5> <E5:.5> <G5:.5> <A5:1> <F5:.5> <G5:.5> <R:.5> <E5:.5>\n<C5:.5> <D5:.5> <B4:1.5> <R:1.5>\n## Terceira Parte\n<G4:.5> <F#4:.5> <F4:.5> \n<D#4:.5>  <E4:1>\n<G#3:.5> <A3:.5> <C4:.5> \n<A3:.5> <C4:.5> \n<D4:2>\n## Quarta Parte\n<G4:.5> <F#4:.5> <F4:.5> \n<D#4:.5>  <E4:1>\n<C5:.5> \n<C5:.5>\n<C5:1>"}
+{id:"super-mario-bros",title:"Super Mario Bros",text:"@info Super Mario Bros\n@info Game (Melódia)\n## Introdução\n<E5:.5> <E5:.5> <R:.5> <E5:.5> <R:.5> <C5:.5> <E5:1>\n<G5:2> <G4:2>\n## Primeira Parte\n<C5:1.5> <G4:1.5> <E4:1>\n<R:.5> <A4:.5> <R:.5> <B4:.5> <R:.5> <Bb4:.5> <A4:1>\n<G4:.5> <E5:.5> <G5:.5> <A5:1> <F5:.5> <G5:.5> <R:.5> <E5:.5>\n<C5:.5> <D5:.5> <B4:1.5> <R:1.5>\n## Segunda Parte\n<C5:1.5> <G4:1.5> <E4:1>\n<R:.5> <A4:.5> <R:.5> <B4:.5> <R:.5> <Bb4:.5> <A4:1>\n<G4:.5> <E5:.5> <G5:.5> <A5:1> <F5:.5> <G5:.5> <R:.5> <E5:.5>\n<C5:.5> <D5:.5> <B4:1.5> <R:1.5>\n## Terceira Parte\n<G4:.5> <F#4:.5> <F4:.5> \n<D#4:.5>  <E4:1>\n<G#3:.5> <A3:.5> <C4:.5> \n<A3:.5> <C4:.5> \n<D4:2>\n## Quarta Parte\n<G4:.5> <F#4:.5> <F4:.5> \n<D#4:.5>  <E4:1>\n<C5:.5> \n<C5:.5>\n<C5:1>"}
 ];
 const SEED_VER='3';
-const OLD_DEMO=['demo1','demo2','kat-gabriela','kat-pretty','kat-that-way','kat-hootie','mario','pirates','brilha','escala-do-re-mi'];
+const OLD_DEMO=['demo1'];
 let songs=(()=>{try{return JSON.parse(localStorage.getItem('pv_songs'))||[]}catch{return[]}})();
 let seedVer=null;try{seedVer=localStorage.getItem('pv_seedver')}catch{}
 if(seedVer!==SEED_VER){  // troca as músicas de exemplo antigas pelas novas (as suas músicas continuam)
@@ -654,6 +684,46 @@ $('notesGo').onclick=()=>{
   $('notesDlg').close();tab(false);renderTrain();
   toast(r.bad?`${r.bad} item(ns) não reconhecido(s) ficaram como digitados`:'Notas convertidas. Ajuste e clique em Salvar');
 };
+
+/* ============ Visor: última nota ou acorde tocado ============ */
+const NOTA_PT=['Dó','Dó#','Ré','Ré#','Mi','Fá','Fá#','Sol','Sol#','Lá','Lá#','Si'];
+const CHD={maior:['','Maior'],menor:['m','Menor'],'7':['7','com Sétima (7)'],maj7:['maj7','Maior com Sétima Maior'],m7:['m7','Menor com Sétima'],dim:['dim','Diminuto'],sus4:['sus4','Suspenso (sus4)'],aug:['aug','Aumentado'],power:['5','Power (5)']};
+function visor(m){
+  const pc=m%12,oct=Math.floor(m/12)-1,n=NAMES[pc];
+  if($('chordOn').checked){
+    const [suf,nm]=CHD[$('chordSel').value];
+    $('visorTok').textContent=`[${n}${suf}]`;$('visorTxt').textContent=`Acorde ${NOTA_PT[pc]} ${nm}`;
+  }else{
+    $('visorTok').textContent=`<${n}>`;$('visorTxt').textContent=`Nota ${NOTA_PT[pc]} · ${n}${oct}`;
+  }
+}
+
+/* ============ Configuração das teclas do computador ============ */
+let capture=null;
+function saveKeys(){try{localStorage.setItem('pv_keymap',JSON.stringify(keyOf))}catch{}}
+function renderKeyCfg(){
+  $('keysList').innerHTML=[...Array(keyEls.size)].map((_,i)=>{
+    const m=startMidi+i,k=keyOf[i],on=capture===i;
+    return `<button data-i="${i}" class="flex items-center justify-between rounded px-2 py-1.5 ${isBlack(m)?'bg-zinc-900 text-zinc-300':'bg-slate-700'} ${on?'ring-2 ring-amber-400':''}"><span>${midiName(m)}</span><b class="font-mono ${on?'text-amber-300':'text-cyan-300'}">${on?'pressione…':k?esc(k.toUpperCase()):'—'}</b></button>`;
+  }).join('');
+}
+$('keysList').onclick=e=>{const b=e.target.closest('[data-i]');if(b){capture=+b.dataset.i;renderKeyCfg()}};
+function cfgKey(e){
+  if(capture===null)return;                      // sem nota escolhida: Esc fecha a janela normalmente
+  e.preventDefault();
+  if(e.key==='Escape')capture=null;
+  else if(e.key==='Backspace'||e.key==='Delete'){keyOf[capture]='';capture=null}
+  else if(e.key.length===1&&e.key!==' '&&!e.ctrlKey&&!e.metaKey&&!e.altKey){
+    const k=e.key.toLowerCase();
+    keyOf=keyOf.map(x=>x===k?'':x);keyOf[capture]=k;capture=null;   // cada tecla serve a uma nota só
+  }else return;
+  saveKeys();labelKeys();renderKeyCfg();
+}
+$('keysBtn').onclick=()=>{capture=null;renderKeyCfg();$('keysDlg').showModal()};
+$('keysDlg').addEventListener('close',()=>{capture=null});
+$('keysClose').onclick=$('keysClose2').onclick=()=>$('keysDlg').close();
+$('keysReset').onclick=()=>{loadKeys(true);capture=null;saveKeys();labelKeys();renderKeyCfg();toast('Teclas restauradas')};
+$('helpClose').onclick=$('helpClose2').onclick=()=>$('help').close();
 
 /* ============ Interface ============ */
 $('keysSel').onchange=build;
