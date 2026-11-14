@@ -45,6 +45,40 @@ textarea,#train{-webkit-user-select:text;user-select:text}
 .sec:hover{color:#fbbf24}
 .meta{flex-basis:100%;font-size:.72rem;color:#64748b}
 #panel{display:none}#panel.open{display:flex}
+/* ===== Celular: layout adaptável (retrato e paisagem) ===== */
+.lbl{display:inline}
+@media (max-width:1023px){
+  #hdr{flex-wrap:nowrap;overflow-x:auto;white-space:nowrap;padding-top:.35rem;padding-bottom:.35rem;scrollbar-width:none}
+  #hdr::-webkit-scrollbar{display:none}
+  #hdr>*{flex:0 0 auto}
+  #hdr .ml-auto{flex-wrap:nowrap}
+  #tools{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  #tools::-webkit-scrollbar{display:none}
+  #tools>*{flex:0 0 auto;white-space:nowrap}
+  #tools #songSel{min-width:9rem;max-width:12rem}
+  #panel{flex:1 1 0;min-height:0;height:auto}
+  #pianoSec{flex:0 0 auto}
+  #main:not(:has(#panel.open)) #pianoSec{flex:1 1 0}
+  #piano{flex:none!important;height:clamp(130px,30dvh,300px)}
+  #main:not(:has(#panel.open)) #piano{flex:1 1 0!important;height:auto}
+  #train{font-size:1.2rem}
+  .ch{font-size:1rem}
+  .lbl{display:none}
+  #coach{padding:.35rem .6rem}
+  body.practice #tools,body.practice #title,body.practice #tabs,body.practice #playRow{display:none}
+}
+/* Celular deitado: letra/cifra à esquerda, piano à direita */
+@media (max-width:1023px) and (orientation:landscape) and (max-height:520px){
+  #main{flex-direction:row}
+  #panel{flex:0 0 44%;border-bottom:0;border-right:1px solid #1e293b}
+  #pianoSec{flex:1 1 0;min-width:0}
+  #piano{flex:1 1 0!important;height:auto}
+  #playRow,#pracRow{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  #playRow::-webkit-scrollbar,#pracRow::-webkit-scrollbar{display:none}
+  #playRow>*,#pracRow>*{flex:0 0 auto;white-space:nowrap}
+  #train{font-size:1.1rem}
+  #title{display:none}
+}
 dialog::backdrop{background:#000a}
 </style>
 </head>
@@ -52,7 +86,7 @@ dialog::backdrop{background:#000a}
 <div class="flex h-full flex-col">
 
   <!-- ===== CABEÇALHO / CONTROLES ===== -->
-  <header class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800 bg-[#0f1420] px-3 py-2 text-sm">
+  <header id="hdr" class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-800 bg-[#0f1420] px-3 py-2 text-sm">
     <h1 class="mr-1 flex items-center gap-2 text-base font-semibold tracking-tight text-white"><img src="data:image/png;base64,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" alt="" width="28" height="28" class="h-7 w-7">Piano Virtual</h1>
     <label class="flex items-center gap-1.5">Teclas
       <select id="keysSel" class="rounded bg-slate-800 px-1.5 py-1">
@@ -82,11 +116,11 @@ dialog::backdrop{background:#000a}
     </div>
   </header>
 
-  <main class="flex min-h-0 flex-1 flex-col lg:flex-row">
+  <main id="main" class="flex min-h-0 flex-1 flex-col lg:flex-row">
 
     <!-- ===== PAINEL DE CIFRAS ===== -->
     <aside id="panel" class="order-1 h-[48%] min-h-0 flex-col border-b border-slate-800 bg-[#0f1420] p-2 lg:order-2 lg:h-auto lg:w-[440px] lg:border-b-0 lg:border-l">
-      <div class="flex flex-wrap gap-1.5 text-sm">
+      <div id="tools" class="flex flex-wrap gap-1.5 text-sm">
         <select id="songSel" class="min-w-0 flex-1 rounded bg-slate-800 px-1.5 py-1"></select>
         <button id="newBtn" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">Nova</button>
         <button id="saveBtn" class="rounded bg-emerald-600 px-2 py-1 text-white hover:bg-emerald-500">Salvar</button>
@@ -100,7 +134,7 @@ dialog::backdrop{background:#000a}
         <input id="fileIn" type="file" accept=".txt,.cifra,.json,text/plain,application/json" multiple class="hidden">
       </div>
       <input id="title" placeholder="Título da música" class="mt-1.5 rounded bg-slate-800 px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-cyan-500">
-      <div class="mt-1.5 flex gap-1 text-sm">
+      <div id="tabs" class="mt-1.5 flex gap-1 text-sm">
         <button id="tabEdit" class="rounded-t bg-slate-700 px-3 py-1">Editor</button>
         <button id="tabTrain" class="rounded-t bg-slate-800 px-3 py-1">Treino</button>
       </div>
@@ -108,7 +142,7 @@ dialog::backdrop{background:#000a}
       <div id="train" class="hidden min-h-0 flex-1 overflow-auto rounded-b rounded-tr bg-[#0a0e17] p-3 text-lg"></div>
 
       <!-- Autoplay -->
-      <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+      <div id="playRow" class="mt-2 flex flex-wrap items-center gap-2 text-sm">
         <button id="playBtn" class="rounded bg-amber-500 px-4 py-1.5 font-semibold text-black hover:bg-amber-400">▶ Tocar</button>
         <button id="pauseBtn" class="hidden rounded bg-sky-600 px-3 py-1.5 font-semibold text-white hover:bg-sky-500">⏸ Pausar</button>
         <button id="prevSec" title="Início da seção / seção anterior" class="rounded bg-slate-800 px-2.5 py-1.5 hover:bg-slate-700">⏮</button>
@@ -118,7 +152,7 @@ dialog::backdrop{background:#000a}
         <label class="flex items-center gap-1"><input id="loop" type="checkbox" class="accent-amber-400"> Repetir</label>
         <span id="selInfo" class="text-xs text-slate-400"></span>
       </div>
-      <div class="mt-1.5 flex flex-wrap items-center gap-2 border-t border-slate-800 pt-1.5 text-sm">
+      <div id="pracRow" class="mt-1.5 flex shrink-0 flex-wrap items-center gap-2 border-t border-slate-800 pt-1.5 text-sm">
         <button id="pracBtn" title="Modo aprendizado: o piano mostra as teclas e espera você tocar" class="rounded bg-emerald-600 px-3 py-1.5 font-semibold text-white hover:bg-emerald-500">🎓 Praticar</button>
         <label class="flex items-center gap-1.5">Nível
           <select id="pracLevel" class="rounded bg-slate-800 px-1.5 py-1"><option value="1">Iniciante</option><option value="2">Intermediário</option><option value="3">Avançado</option></select></label>
@@ -128,18 +162,18 @@ dialog::backdrop{background:#000a}
     </aside>
 
     <!-- ===== PIANO ===== -->
-    <section class="order-2 flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2 lg:order-1">
+    <section id="pianoSec" class="order-2 flex min-h-0 min-w-0 flex-1 flex-col gap-2 p-2 lg:order-1">
       <div id="coach" class="hidden shrink-0 rounded-lg border border-emerald-700 bg-[#0f1a17] px-3 py-2 text-sm">
         <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span id="coachStep" class="rounded bg-emerald-700 px-2 py-0.5 text-xs font-semibold text-white">1/1</span>
           <span id="coachMain" class="text-base font-semibold text-emerald-200"></span>
           <span id="coachSub" class="text-xs text-slate-300"></span>
           <span class="ml-auto flex flex-wrap gap-1.5">
-            <button id="coachHear" title="Ouvir o que deve ser tocado" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">🔊 Ouvir</button>
-            <button id="coachHint" title="Mostrar as teclas" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">💡 Dica</button>
-            <button id="coachSkip" title="Pular este passo" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">⏭ Pular</button>
-            <button id="coachRestart" title="Recomeçar o treino" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">🔁 Recomeçar</button>
-            <button id="coachExit" class="rounded bg-rose-700 px-2 py-1 text-white hover:bg-rose-600">■ Sair</button>
+            <button id="coachHear" title="Ouvir o que deve ser tocado" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">🔊<span class="lbl"> Ouvir</span></button>
+            <button id="coachHint" title="Mostrar as teclas" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">💡<span class="lbl"> Dica</span></button>
+            <button id="coachSkip" title="Pular este passo" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">⏭<span class="lbl"> Pular</span></button>
+            <button id="coachRestart" title="Recomeçar o treino" class="rounded bg-slate-800 px-2 py-1 hover:bg-slate-700">🔁<span class="lbl"> Recomeçar</span></button>
+            <button id="coachExit" title="Sair do treino" class="rounded bg-rose-700 px-2 py-1 text-white hover:bg-rose-600">■<span class="lbl"> Sair</span></button>
           </span>
         </div>
         <div class="mt-1.5 h-1.5 overflow-hidden rounded bg-slate-800"><div id="coachBar" class="h-full bg-emerald-500 transition-all" style="width:0"></div></div>
@@ -529,7 +563,7 @@ function applyBpm(){const m=$('txt').value.match(/^@bpm[ \t]+(\d{2,3})/m);if(m){
 function mark(i){
   $('train').querySelectorAll('.cur').forEach(e=>e.classList.remove('cur'));
   const el=$('train').querySelector(`[data-gi="${i}"]`);
-  if(el){el.classList.add('cur');el.scrollIntoView({block:'center',behavior:'smooth'})}
+  if(el){el.classList.add('cur');const tr=$('train'),r=el.getBoundingClientRect(),q=tr.getBoundingClientRect();tr.scrollTo({top:tr.scrollTop+(r.top-q.top)-(q.height-r.height)/2,behavior:'smooth'})}
 }
 function setPaused(v){paused=v;$('pauseBtn').textContent=v?'▶ Continuar':'⏸ Pausar'}
 // Pausa: silencia e guarda a posição; ao continuar, retoma do acorde/nota atual
@@ -643,11 +677,11 @@ function pracStart(from){
   Object.assign(prac,{on:true,list:l,i:0,hits:0,errs:0,skips:0,text,all,done:false});
   if(from!=null){const k=l.findIndex(g=>g.i===from);if(k>=0)prac.i=k}
   $('coach').classList.remove('hidden');$('pracBtn').textContent='■ Sair do treino';
-  if(innerWidth<1024)$('panel').classList.remove('open');   // celular: mais espaço para o piano
+  document.body.classList.add('practice');$('panel').classList.add('open');   // celular: mostra só letra/cifra + piano
   pracShow();
 }
 function pracStop(){
-  prac.on=false;clearTimeout(prac.hintT);pracClear();stop('auto');
+  prac.on=false;clearTimeout(prac.hintT);pracClear();stop('auto');document.body.classList.remove('practice');
   $('coach').classList.add('hidden');$('pracBtn').textContent='🎓 Praticar';
   $('train').querySelectorAll('.cur').forEach(e=>e.classList.remove('cur'));
 }
