@@ -45,6 +45,16 @@ textarea,#train{-webkit-user-select:text;user-select:text}
 .sec:hover{color:#fbbf24}
 .meta{flex-basis:100%;font-size:.72rem;color:#64748b}
 #panel{display:none}#panel.open{display:flex}
+/* ===== Linha do tempo (tempo de cada nota/acorde e total) ===== */
+#tmStrip{position:relative;display:flex;height:12px;margin-top:4px;overflow:hidden;border-radius:3px;background:#111827;cursor:pointer;touch-action:manipulation}
+#tmStrip i{display:block;min-width:0;height:100%;background:#0e7490;box-shadow:inset -1px 0 #0a0e17}
+#tmStrip i.n{background:#b45309}
+#tmStrip i.p{background:#334155}
+#tmStrip i.cur{filter:brightness(1.9)}
+#tmFill{position:absolute;left:0;top:0;bottom:0;width:0;background:#ffffff33;border-right:2px solid #fff;pointer-events:none}
+#tmBtn.on{background:#0e7490;color:#fff}
+body.showtm .seg[data-tm]::after{content:attr(data-tm);font:600 .58rem ui-monospace,Menlo,monospace;color:#64748b;white-space:nowrap;padding-right:.35em;min-height:1em}
+body.practice #timeBar{display:none}
 /* ===== Celular: layout adaptável (retrato e paisagem) ===== */
 .lbl{display:inline}
 @media (max-width:1023px){
@@ -78,6 +88,7 @@ textarea,#train{-webkit-user-select:text;user-select:text}
   #playRow>*,#pracRow>*{flex:0 0 auto;white-space:nowrap}
   #train{font-size:1.1rem}
   #title{display:none}
+  #tmStrip{height:7px;margin-top:3px}
 }
 dialog::backdrop{background:#000a}
 </style>
@@ -140,6 +151,16 @@ dialog::backdrop{background:#000a}
       </div>
       <textarea id="txt" spellcheck="false" class="min-h-0 flex-1 resize-none rounded-b rounded-tr bg-[#0a0e17] p-2 font-mono text-sm outline-none focus:ring-1 focus:ring-cyan-500" placeholder="Digite letra, [acordes] e &lt;notas&gt;..."></textarea>
       <div id="train" class="hidden min-h-0 flex-1 overflow-auto rounded-b rounded-tr bg-[#0a0e17] p-3 text-lg"></div>
+
+      <!-- Linha do tempo: posição / tempo total + visão geral da música -->
+      <div id="timeBar" class="mt-1.5 shrink-0 rounded bg-[#0a0e17] px-2 py-1 text-xs">
+        <div class="flex items-center gap-2">
+          <span class="shrink-0 font-mono" title="Posição / tempo total da música (no BPM atual)"><b id="tmNow" class="text-cyan-300">0:00</b><span class="text-slate-500"> / </span><b id="tmTot" class="text-slate-100">0:00</b><span id="tmRng" class="hidden text-amber-300"></span></span>
+          <span id="tmInfo" class="min-w-0 flex-1 truncate text-slate-400" title="Acorde/nota · início · duração · tempos"></span>
+          <button id="tmBtn" title="Mostrar o início e a duração sobre cada acorde/nota na aba Treino" class="shrink-0 rounded bg-slate-800 px-2 py-0.5 hover:bg-slate-700">⏱<span class="lbl"> Tempos</span></button>
+        </div>
+        <div id="tmStrip" role="img" aria-label="Linha do tempo da música" title="Linha do tempo: azul = acorde · laranja = nota · cinza = pausa"></div>
+      </div>
 
       <!-- Autoplay -->
       <div id="playRow" class="mt-2 flex flex-wrap items-center gap-2 text-sm">
@@ -282,6 +303,14 @@ dialog::backdrop{background:#000a}
     <li><b>Voltar ou pular sem recomeçar:</b> na aba Treino, <b>clique em qualquer acorde, nota ou título de seção</b> e a música continua dali. Os botões ⏮ e ⏭ voltam ao início da seção ou avançam para a próxima.</li>
   </ul>
   <p>Durante a reprodução aparece o botão <b>⏸ Pausar</b>, que vira <b>▶ Continuar</b> e retoma do ponto onde parou. <b>■ Parar</b> encerra. Ajuste a velocidade em BPM e marque “Repetir” para repetir o trecho.</p>
+  <h3 class="mt-3 font-semibold text-cyan-300">Linha do tempo (tempo de cada nota e acorde)</h3>
+  <p>Logo acima do <b>▶ Tocar</b> fica a barra de tempo. À esquerda: a posição e o <b>tempo total</b> da música, calculados com o BPM atual. No meio: o acorde ou nota onde está o cursor do Editor, com o minuto em que começa, quanto dura (em segundos) e quantos tempos tem. Abaixo: uma faixa com a música inteira, onde <b style="color:#22d3ee">azul</b> é acorde, <b style="color:#f59e0b">laranja</b> é nota e cinza é pausa.</p>
+  <ul class="my-2 list-disc pl-5">
+    <li>Ela se atualiza sozinha enquanto você escreve. Mudar o <b>BPM</b> recalcula todos os tempos.</li>
+    <li>Toque (ou clique) na faixa: no Editor leva o cursor até aquele ponto; no Treino toca a partir dali. No PC, passe o mouse sobre ela para ver o tempo de cada trecho.</li>
+    <li>Durante o play, a faixa e o relógio acompanham a música. Se houver seleção ou seção escolhida, aparece também o tempo do trecho.</li>
+    <li>O botão <b>⏱ Tempos</b> mostra, na aba Treino, o início e a duração sobre cada acorde/nota (liga e desliga).</li>
+  </ul>
   <h3 class="mt-3 font-semibold text-cyan-300">Praticar (modo aprendizado)</h3>
   <p>Abra uma música e clique em <b>🎓 Praticar</b>. O piano acende em <b style="color:#4ade80">verde</b> as teclas do próximo passo e <b>espera</b> você tocar. Só avança quando você acerta; teclas erradas ficam vermelhas por um instante. Em acordes, segure todas as teclas ao mesmo tempo.</p>
   <ul class="my-2 list-disc pl-5">
@@ -432,7 +461,7 @@ addEventListener('blur',stopAll);
 
 /* ============ Gerenciador de músicas (CRUD + LocalStorage) ============ */
 const DEMO=[
-{id:"parabens",title:"Parabéns pra Você",text:"@info Parabéns para você.\n@info Clássico Infantil\n[C]<G4:.75>Pa<G4:.25>ra<A4>béns <G4>pra <C5>vo<B4:2>cê\n\n[G]<G4:.75>Nes<G4:.25>ta <A4>da<G4>ta <D5>que<C5:2>ri<R>da\n\n[C]<G4:.75>Muitas <G4:.25>fe<G5>li<E5>ci<C5>da<B4>des<A4:2>\n[F]<F5:.75>Mui<F5:.25>tos <E5>a<C5>nos <D5>de <C5:3>vi<R>da"},
+{id:"parabens",title:"Parabéns pra Você",text:"@info Parabéns para você.\n@info Clássico Infantil\n[C]<G4:.75>Pa<G4:.25>ra<A4>béns <G4>pra <C5>vo<B4:2>cê\n\n[G]<G4:.75>Nes<G4:.25>ta <A4>da<G4>ta <D5>que<C5>ri<C5:2>da\n\n[C]<G4:.75>Mui <G4:.25>tas<G5>fe<E5>li<C5>ci<B4>da<A4:2>des\n[F]<F5:.75>Mui<F5:.25>tos <E5>a<C5>nos <D5>de <C5>vi<5:2>da"},
 {id:"do-re-mi-fa",title:"Dó, ré, mi, fá",text:"@Dó Ré Mi Fá\n@info Clássico Infantil (Escala de Dó maior)\n## 1ª frase: DÓ RÉ MI FÁ FÁ FÁ\n<C4:.5>DÓ <D4:.5>RÉ <E4:.5>MI <F4:.5>FÁ  \n<F4>FÁ \n<F4>FÁ\n## 2ª frase: DÓ RÉ DÓ RÉ RÉ RÉ\n<C4:.5>DÓ <D4:.5>RÉ <C4:.5>DÓ <D4:.5>RÉ \n<D4>RÉ \n<D4>RÉ\n## 3ª frase: DÓ SOL FÁ MI MI MI\n<C4:.5>DÓ <G4:.5>SOL <F4:.5>FÁ <E4:.5>MI \n<E4>MI \n<E4>MI\n## 4ª frase: DÓ RÉ MI FÁ FÁ FÁ\n<C4:.5>DÓ <D4:.5>RÉ <E4:.5>MI <F4:.5>FÁ \n<F4>FÁ \n<F4>FÁ"},
 {id:"brilha-estrelinha",title:"Brilha, brilha, estrelinha",text:"@Clássico Infantil\n@info Brilha, Brilha Estrelinha (em Dó maior)\n## Brilha, brilha estrelinha\n<C4>Bri<C4>lha, <G4>bri<G4>lha <A4>es<A4>tre<G4:2>linha \n## Quero ver você brilhar\n<F4>Que<F4>ro <E4>ver <E4>vo<D4>cê <D4>bri <C4:2>lhar\n## Lá no alto, lá no céu\n<G4>Lá <G4>no <F4>al<F4>to, <E4>lá <E4>no <D4:2>céu\n## Num desenho de cordel\n<G4>no <G4>de<F4>se<F4>nho <E4>de <E4>cor<D4:2>del\n## Brilha, brilha estrelinha\n<C4>Bri<C4>lha, <G4>bri<G4>lha <A4>es<A4>tre<G4:2>linha\n## Baila, linda bailarina\n<F4>Bai<F4>la <E4>lin<E4>da <D4>bai<D4>la<C4:2>rina"},
 {id:"sonic",title:"Sonic",text:"@info Sonic\n@info Game (Melódia)\n## Introdução\n<E4:.5> <C#4:.5> <C#4:.5> <C#4:.5> <D4:.5>\n<B3>\n<C#4:.5> <C#4:.5> <C#4:.5> <A3:.5> <G3:.5>\n<B3:1> \n<A3:.5> <E4:.5> <A4:.5>\n<E4>\n<G#4:.5>\n<A4:.5>\n## Primeira Parte\n<B3:1> <A3:1> <B3:1> <A3:1>\n<B3:.5> <A3:.5> <C4:1> \n<B3:1> <A3:2>\n<A3:1> <B3:1> <C4:.5> <A3:1> <B3:1> <C4:.5>\n<C4:1>\n<B3:2>\n\n## Segunda Parte\n<C5:.5> <A4:1> \n<C5:.5> <B4:1> \n<C5:.5> <B4:1>\n<G4:2>\n\n<G4:.5> <E5:.5> <D5:1> \n<C5:.5> <B4:1> \n<C5:.5> <B4:1>\n<G4:2>\n\n## Terceira Parte\n<C5:.5> <A4:1> \n<C5:.5> <B4:1> \n<C5:.5> <B4:1>\n<G4:2>\n\n<A4:.5> <A4:.5> <F4:1> \n<A4:.5> <G4:1> \n<A4:.5> <G4:1>\n<C4:2>\n\n## Quarta Parte\n<C4:.5> <C4:.5> <E4:.5>\n<D4:3>\n<A3:.5> <C4:.5>\n<E4:3>"},
@@ -455,7 +484,7 @@ function fillSongs(){
 function loadSong(id){
   const s=songs.find(x=>x.id===id);curId=s?s.id:null;
   $('title').value=s?s.title:'';$('txt').value=s?s.text:'';
-  $('songSel').value=curId||'';stopPlay();if(prac.on)pracStop();curGi=-1;applyBpm();renderTrain();selInfo();
+  $('songSel').value=curId||'';stopPlay();if(prac.on)pracStop();curGi=-1;tl.k=-1;applyBpm();renderTrain();selInfo();
 }
 $('songSel').onchange=e=>loadSong(e.target.value);
 $('newBtn').onclick=()=>{loadSong('');$('title').focus()};
@@ -530,7 +559,7 @@ function renderTrain(){
   });
   bs=pos;buf=text.slice(pos);flush();
   $('train').innerHTML=h;
-  secs=sections(text,gs);setSecs();
+  secs=sections(text,gs);setSecs();tlUpdate();
 }
 function tab(train){
   $('txt').classList.toggle('hidden',train);$('train').classList.toggle('hidden',!train);
@@ -555,9 +584,9 @@ function setSecs(){
   sel.value=secs[prev]?prev:'all';
 }
 function selRange(){const t=$('txt');return t.selectionStart!==t.selectionEnd?[t.selectionStart,t.selectionEnd]:null}
-function selInfo(){const r=selRange();$('selInfo').textContent=r?`Seleção: ${r[1]-r[0]} car.`:''}
+function selInfo(){const r=selRange();$('selInfo').textContent=r?`Seleção: ${r[1]-r[0]} car.`:'';tlRange()}
 ['select','keyup','mouseup','touchend','input','focus'].forEach(ev=>$('txt').addEventListener(ev,()=>setTimeout(selInfo,0)));
-$('bpm').oninput=e=>$('bpmV').textContent=e.target.value;
+$('bpm').oninput=e=>{$('bpmV').textContent=e.target.value;tlTimes()};
 $('vol').oninput=e=>{if(master)master.gain.value=+e.target.value};
 function applyBpm(){const m=$('txt').value.match(/^@bpm[ \t]+(\d{2,3})/m);if(m){$('bpm').value=m[1];$('bpmV').textContent=$('bpm').value}}
 function mark(i){
@@ -569,12 +598,12 @@ function setPaused(v){paused=v;$('pauseBtn').textContent=v?'▶ Continuar':'⏸ 
 // Pausa: silencia e guarda a posição; ao continuar, retoma do acorde/nota atual
 function pausePlay(){
   if(!playing)return;
-  if(!paused){setPaused(true);clearTimers();pos=Math.max(pos-1,0)}
+  if(!paused){setPaused(true);clearTimers();tlPause();pos=Math.max(pos-1,0)}
   else{setPaused(false);step()}
 }
 function clearTimers(){timers.forEach(clearTimeout);timers=[];stop('auto')}
 function stopPlay(){
-  playing=false;setPaused(false);$('pauseBtn').classList.add('hidden');clearTimers();
+  playing=false;setPaused(false);$('pauseBtn').classList.add('hidden');clearTimers();tlStop();
   $('train').querySelectorAll('.cur').forEach(e=>e.classList.remove('cur'));
   $('playBtn').textContent='▶ Tocar';
 }
@@ -589,7 +618,7 @@ function step(){
   if(!playing||paused)return;
   if(pos>=list.length){if($('loop').checked&&list.length)pos=0;else return stopPlay()}
   const g=list[pos++],ms=g.beats*60000/$('bpm').value;
-  curGi=g.i;mark(g.i);start('auto',g.midis,'auto');
+  curGi=g.i;mark(g.i);tlPlay(g,ms);start('auto',g.midis,'auto');
   timers=[setTimeout(()=>stop('auto'),ms*.9),setTimeout(step,ms)];
 }
 function startPlay(from){
@@ -621,9 +650,109 @@ $('train').addEventListener('click',e=>{
   const g=e.target.closest('[data-gi]');if(g)jump(+g.dataset.gi);
 });
 $('prevSec').onclick=()=>secJump(-1);$('nextSec').onclick=()=>secJump(1);
-$('secSel').onchange=()=>{if(playing){stopPlay();startPlay()}else if(prac.on)pracStart()};
+$('secSel').onchange=()=>{tlRange();if(playing){stopPlay();startPlay()}else if(prac.on)pracStart()};
 $('pauseBtn').onclick=pausePlay;
 $('playBtn').onclick=()=>playing?stopPlay():startPlay();
+
+/* ============ Linha do tempo (tempo de cada nota/acorde e tempo total) ============ */
+// Tempo (s) = tempos × 60 / BPM. É a mesma conta do piano automático, então o relógio bate com o que toca.
+const tl={gs:[],st:[],du:[],cb:[],tb:0,tot:0,play:false,g:-1,k:-1,t0:0,iv:null};
+const fT=(s,r)=>{s=Math.max(0,r?Math.round(s):Math.floor(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const fN=n=>String(+(+n).toFixed(2)).replace('.',',');
+const fD=s=>s<10?fN(s)+' s':Math.round(s)+' s';
+function tlBuild(){                       // estrutura: grupos e tempos acumulados (não dependem do BPM)
+  const gs=parse($('txt').value);let c=0;
+  tl.gs=gs;tl.cb=[];gs.forEach(g=>{tl.cb.push(c);c+=g.beats});tl.tb=c;
+}
+function tlTimes(){                       // tempos em segundos (dependem do BPM)
+  const k=60/(+$('bpm').value||100);let t=0;tl.st=[];tl.du=[];
+  tl.gs.forEach(g=>{tl.st.push(t);const d=g.beats*k;tl.du.push(d);t+=d});
+  tl.tot=t;$('tmTot').textContent=fT(t,1);
+  $('train').querySelectorAll('[data-gi]').forEach(e=>{const i=+e.dataset.gi;if(tl.du[i]!=null)e.dataset.tm=fT(tl.st[i])+' · '+fD(tl.du[i])});
+  tlRange();if(!tl.play)tlCaret();
+}
+function tlUpdate(){
+  tlBuild();
+  const cls=g=>g.midis.length?(g.labels.some(l=>l.ch)?'':'n'):'p';   // acorde | nota | pausa
+  $('tmStrip').innerHTML=tl.gs.map(g=>`<i class="${cls(g)}" style="flex:${g.beats} 1 0"></i>`).join('')+'<b id="tmFill"></b>';
+  tlTimes();
+}
+function tlRange(){                       // tempo do trecho (seleção ou seção), quando não é a música toda
+  const el=$('tmRng'),all=tl.gs,l=all.length?getList(all):[];
+  if(l.length&&l.length<all.length&&tl.du.length){let s=0;l.forEach(g=>s+=tl.du[g.i]||0);el.textContent=' · trecho '+fT(s,1);el.classList.remove('hidden')}
+  else{el.textContent='';el.classList.add('hidden')}
+}
+function tlShow(i){                       // detalhe do acorde/nota i
+  const g=tl.gs[i],el=$('tmInfo'),s=$('tmStrip'),p=s.querySelector('.cur');
+  if(p)p.classList.remove('cur');
+  if(!g){el.textContent=tl.gs.length?'Toque na cifra para ver o tempo de cada item':'Sem acordes ou notas ainda';return}
+  if(s.children[i])s.children[i].classList.add('cur');
+  const nm=g.labels.map(l=>l.t==='—'?'Pausa':l.t).join(' + ');
+  el.innerHTML=`<b class="text-slate-100">${esc(nm)}</b> · <span class="lbl">início </span>${fT(tl.st[i])} · <span class="lbl">dura </span>${fD(tl.du[i])} · ${fN(g.beats)} ${g.beats===1?'tempo':'tempos'}`;
+}
+function tlCaret(){                       // no Editor: acompanha o cursor do texto (só depois que você toca nele)
+  if(tl.play)return;
+  const t=$('txt');
+  if(document.activeElement===t){
+    const c=t.selectionStart||0;let k=-1;
+    for(let i=0;i<tl.gs.length;i++){if(tl.gs[i].start<=c)k=i;else break}
+    tl.k=k;
+  }
+  const k=tl.k<tl.gs.length?tl.k:-1;
+  $('tmNow').textContent=k>=0?fT(tl.st[k]):'0:00';tlShow(k);
+}
+function tlTick(){
+  if(!tl.play)return;const d=tl.du[tl.g];if(d==null)return;
+  $('tmNow').textContent=fT(tl.st[tl.g]+Math.min((performance.now()-tl.t0)/1000,d));
+}
+function tlPlay(g,ms){                    // chamado a cada acorde/nota do piano automático
+  if(tl.gs.length<=g.i)tlUpdate();
+  tl.play=true;tl.g=g.i;tl.t0=performance.now();tlShow(g.i);
+  const f=$('tmFill');
+  if(f&&tl.tb){
+    const a=tl.cb[g.i]/tl.tb*100,b=(tl.cb[g.i]+g.beats)/tl.tb*100;
+    f.style.transition='none';f.style.width=a+'%';void f.offsetWidth;
+    f.style.transition=`width ${ms}ms linear`;f.style.width=b+'%';
+  }
+  clearInterval(tl.iv);tl.iv=setInterval(tlTick,200);tlTick();
+}
+function tlPause(){clearInterval(tl.iv);const f=$('tmFill');if(f){const w=getComputedStyle(f).width;f.style.transition='none';f.style.width=w}}
+function tlStop(){
+  clearInterval(tl.iv);tl.play=false;
+  const f=$('tmFill');if(f){f.style.transition='none';f.style.width='0'}
+  tlCaret();
+}
+// posição na faixa -> índice do acorde/nota
+function tlAt(e){
+  const r=$('tmStrip').getBoundingClientRect();if(!tl.tb||!r.width)return -1;
+  const x=Math.min(Math.max((e.clientX-r.left)/r.width,0),.9999)*tl.tb;let k=-1;
+  for(let i=0;i<tl.cb.length;i++){if(tl.cb[i]<=x)k=i;else break}
+  return k;
+}
+// rola o Editor até a posição p (mede o texto antes dela num espelho invisível)
+function caretScroll(t,p){
+  const d=document.createElement('div'),cs=getComputedStyle(t);
+  ['fontFamily','fontSize','lineHeight','letterSpacing','paddingLeft','paddingRight','paddingTop','paddingBottom'].forEach(k=>d.style[k]=cs[k]);
+  d.style.cssText+=';position:absolute;visibility:hidden;left:-9999px;top:0;box-sizing:border-box;border:0;white-space:pre-wrap;overflow-wrap:break-word;width:'+t.clientWidth+'px';
+  d.textContent=t.value.slice(0,p)+'\u200b';document.body.appendChild(d);
+  const h=d.offsetHeight;d.remove();t.scrollTop=Math.max(0,h-t.clientHeight/2);
+}
+$('tmStrip').addEventListener('click',e=>{
+  const g=tl.gs[tlAt(e)];if(!g)return;
+  if(playing||!$('train').classList.contains('hidden'))jump(g.i);          // Treino/tocando: toca dali
+  else{const t=$('txt');t.focus({preventScroll:true});t.setSelectionRange(g.start,g.start);caretScroll(t,g.start);tlCaret()}   // Editor: leva o cursor
+});
+$('tmStrip').addEventListener('pointermove',e=>{if(e.pointerType==='mouse'&&!tl.play)tlShow(tlAt(e))});
+$('tmStrip').addEventListener('pointerleave',()=>{if(!tl.play)tlCaret()});
+['keyup','click','mouseup','touchend','focus','select','selectionchange'].forEach(ev=>$('txt').addEventListener(ev,()=>setTimeout(tlCaret,0)));
+function tmBtnSync(){$('tmBtn').classList.toggle('on',document.body.classList.contains('showtm'))}
+$('tmBtn').onclick=()=>{
+  const on=document.body.classList.toggle('showtm');tmBtnSync();
+  try{localStorage.setItem('pv_showtm',on?'1':'0')}catch{}
+  toast(on?'Tempos visíveis na aba Treino':'Tempos ocultos');
+};
+try{if(localStorage.getItem('pv_showtm')==='1')document.body.classList.add('showtm')}catch{}
+tmBtnSync();
 
 /* ============ Baixar e abrir arquivos de cifra ============ */
 function dl(name,content,type){
